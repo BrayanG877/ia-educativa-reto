@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Conexión Backend</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background: #5568d3; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .loading {
+            display: none;
+            color: #666;
+            font-style: italic;
+        }
+        .loading.show { display: block; }
+    </style>
+</head>
+<body>
+    <div class="test-card">
+        <h1>🔗 Test de Conexión Backend-Frontend</h1>
+
+        <div id="status" class="status info">
+            Presiona "Probar Conexión" para verificar que el frontend se conecta al backend
+        </div>
+
+        <button onclick="testConnection()">🔌 Probar Conexión</button>
+        <button onclick="testLogin()">👤 Probar Login</button>
+        <button onclick="clearStorage()">🗑️ Limpiar LocalStorage</button>
+        <button onclick="location.href='login.html'">➡️ Ir a Login</button>
+
+        <div id="loading" class="loading">Probando conexión...</div>
+
+        <h3>Resultados:</h3>
+        <pre id="results">Esperando pruebas...</pre>
+
+        <h3>Configuración:</h3>
+        <pre id="config"></pre>
+    </div>
+
+    <script src="api-client.js"></script>
+    <script>
+        // Mostrar configuración
+        document.getElementById('config').textContent =
+            `URL Backend: ${API_CONFIG.BASE_URL}\n` +
+            `Frontend: ${window.location.origin}\n` +
+            `Token guardado: ${localStorage.getItem('auth_token') ? 'Sí' : 'No'}\n` +
+            `Usuario guardado: ${localStorage.getItem('user') ? 'Sí' : 'No'}`;
+
+        async function testConnection() {
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            const loadingDiv = document.getElementById('loading');
+
+            loadingDiv.classList.add('show');
+            statusDiv.className = 'status info';
+            statusDiv.textContent = 'Probando conexión con backend...';
+
+            try {
+                // Test 1: Health check
+                const healthResponse = await fetch(`${API_CONFIG.BASE_URL}/health`);
+                const healthData = await healthResponse.json();
+
+                // Test 2: Obtener materias
+                const subjectsResponse = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.SUBJECTS}`);
+                const subjectsData = await subjectsResponse.json();
+
+                loadingDiv.classList.remove('show');
+                statusDiv.className = 'status success';
+                statusDiv.innerHTML = '✅ <strong>CONEXIÓN EXITOSA</strong> - Frontend conectado correctamente al backend';
+
+                resultsDiv.textContent =
+                    '=== TEST 1: HEALTH CHECK ===\n' +
+                    JSON.stringify(healthData, null, 2) + '\n\n' +
+                    '=== TEST 2: MATERIAS DISPONIBLES ===\n' +
+                    `Total materias: ${subjectsData.data?.length || 0}\n` +
+                    JSON.stringify(subjectsData, null, 2);
+
+            } catch (error) {
+                loadingDiv.classList.remove('show');
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ <strong>ERROR DE CONEXIÓN</strong> - No se pudo conectar al backend';
+
+                resultsDiv.textContent =
+                    'ERROR:\n' +
+                    error.message + '\n\n' +
+                    'Verifica que:\n' +
+                    '1. El backend esté corriendo en puerto 3001\n' +
+                    '2. El CORS esté configurado correctamente\n' +
+                    '3. No haya firewall bloqueando la conexión';
+            }
+        }
+
+        async function testLogin() {
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+            const loadingDiv = document.getElementById('loading');
+
+            loadingDiv.classList.add('show');
+            statusDiv.className = 'status info';
+            statusDiv.textContent = 'Probando login con usuario de prueba...';
+
+            try {
+                const result = await authManager.login('camilamiamor@gmail.com', '2804');
+
+                loadingDiv.classList.remove('show');
+
+                if (result.success) {
+                    statusDiv.className = 'status success';
+                    statusDiv.innerHTML = '✅ <strong>LOGIN EXITOSO</strong>';
+
+                    resultsDiv.textContent =
+                        '=== LOGIN EXITOSO ===\n' +
+                        JSON.stringify(result, null, 2) + '\n\n' +
+                        'Token guardado en localStorage\n' +
+                        'Usuario autenticado correctamente';
+                } else {
+                    statusDiv.className = 'status error';
+                    statusDiv.innerHTML = '❌ <strong>LOGIN FALLIDO</strong>';
+
+                    resultsDiv.textContent =
+                        '=== LOGIN FALLIDO ===\n' +
+                        JSON.stringify(result, null, 2);
+                }
+
+            } catch (error) {
+                loadingDiv.classList.remove('show');
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ <strong>ERROR EN LOGIN</strong>';
+
+                resultsDiv.textContent =
+                    'ERROR:\n' +
+                    error.message + '\n\n' +
+                    error.stack;
+            }
+        }
+
+        function clearStorage() {
+            localStorage.clear();
+            document.getElementById('status').className = 'status success';
+            document.getElementById('status').textContent = '✅ LocalStorage limpiado correctamente';
+            document.getElementById('config').textContent =
+                `URL Backend: ${API_CONFIG.BASE_URL}\n` +
+                `Frontend: ${window.location.origin}\n` +
+                `Token guardado: No\n` +
+                `Usuario guardado: No`;
+        }
+    </script>
+</body>
+</html>

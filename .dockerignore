@@ -1,0 +1,94 @@
+# Secretos y credenciales
+**/.env
+**/.env.local
+**/.env.development
+**/.env.production
+**/.env.staging
+!**/.env.example
+!**/.env.production.example
+
+# Certificados y claves
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.cert
+**/*.crt
+**/credentials
+**/secrets
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Dependencias
+**/node_modules/
+
+# Logs
+logs/
+**/logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Copias/deploy antiguos
+deploy-check/
+deploy-extracted/
+verify-zip/
+logs-deploy/
+*.zip
+*.tar.gz
+logs-deploy/
+
+# Archivos específicos de Azure/IIS que no necesitamos en Docker
+web.config
+startup.sh
+crear-paquete-azure.ps1
+COMANDOS_AZURE.md
+
+# Tests
+backend/scripts/tests/
+**/*.test.js
+**/*.spec.js
+**/__tests__/
+**/test/
+**/tests/
+.jest*
+jest.config.*
+nodemon.json
+.nodemonignore
+
+# Sistema/editor
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentación
+*.md
+
+# Archivos temporales
+tmp/
+temp/
+.tmp/
+*.tmp
+*.bak
+*.backup
+
+# Scripts PowerShell
+*.ps1
+
+# Docker
+backend/Dockerfile
+backend/Dockerfile.*
+.dockerignore

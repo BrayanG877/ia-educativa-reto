@@ -1,0 +1,293 @@
+═══════════════════════════════════════════════════════════════════════════════
+                       RESUMEN DE GITHUB COPILOT
+═══════════════════════════════════════════════════════════════════════════════
+
+¿QUÉ ES GITHUB COPILOT?
+═══════════════════════════════════════════════════════════════════════════════
+
+GitHub Copilot es un asistente de programación con inteligencia artificial que se
+integra directamente en tu editor Visual Studio Code (VS Code). Funciona como un
+"copiloto" que te ayuda a escribir código, resolver problemas, depurar errores,
+explorar proyectos y completar tareas de desarrollo de manera más eficiente.
+
+Actualmente utiliza el modelo Claude Sonnet 4.5 de Anthropic, uno de los modelos
+de IA más avanzados disponibles.
+
+
+¿CÓMO FUNCIONA?
+═══════════════════════════════════════════════════════════════════════════════
+
+GitHub Copilot funciona mediante:
+
+1. ANÁLISIS DE CONTEXTO
+   - Lee y comprende tu código abierto
+   - Analiza la estructura de tu proyecto
+   - Entiende el historial de tu conversación
+
+2. EJECUCIÓN DE HERRAMIENTAS
+   - Puede leer archivos de tu workspace
+   - Puede crear y editar archivos
+   - Puede ejecutar comandos en la terminal
+   - Puede buscar en tu código (búsqueda semántica, regex, etc.)
+   - Puede navegar por directorios
+
+3. INTERACCIÓN CONTINUA
+   - Responde preguntas sobre tu código
+   - Implementa cambios automáticamente
+   - Sugiere mejoras y optimizaciones
+   - Depura errores
+
+
+HERRAMIENTAS QUE USA
+═══════════════════════════════════════════════════════════════════════════════
+
+GitHub Copilot tiene acceso a múltiples herramientas:
+
+📁 GESTIÓN DE ARCHIVOS:
+   • read_file - Leer contenido de archivos
+   • create_file - Crear nuevos archivos
+   • replace_string_in_file - Editar archivos existentes
+   • list_dir - Listar contenido de directorios
+   • file_search - Buscar archivos por patrón
+
+🔍 BÚSQUEDA Y EXPLORACIÓN:
+   • semantic_search - Búsqueda semántica en el código
+   • grep_search - Búsqueda por texto o regex
+   • search_subagent - Agente especializado en exploración
+   • get_errors - Detectar errores de compilación/lint
+
+⚙️ EJECUCIÓN:
+   • run_in_terminal - Ejecutar comandos de PowerShell
+   • get_terminal_output - Obtener salida de procesos en background
+
+🧠 GESTIÓN DE TAREAS:
+   • manage_todo_list - Organizar trabajo en pasos
+   • memory - Sistema de memoria persistente
+   • runSubagent - Delegar tareas complejas a subagentes
+
+📓 NOTEBOOKS:
+   • edit_notebook_file - Editar archivos Jupyter
+   • run_notebook_cell - Ejecutar celdas de notebooks
+
+🌐 WEB:
+   • fetch_webpage - Obtener contenido de páginas web
+
+🤖 Y MUCHAS MÁS...
+
+
+PERSONALIZACIÓN PERMITIDA
+═══════════════════════════════════════════════════════════════════════════════
+
+GitHub Copilot ofrece múltiples niveles de personalización:
+
+1. ARCHIVOS .INSTRUCTIONS.MD / .PROMPT.MD / COPILOT-INSTRUCTIONS.MD
+   - Define reglas y preferencias específicas para tu proyecto
+   - Establece estándares de código
+   - Configura comportamientos personalizados
+   - Ubicación: raíz del workspace o carpetas específicas
+
+2. SKILLS (ARCHIVOS SKILL.MD)
+   - Crea conocimiento especializado por dominio
+   - Define cuando debe activarse un skill
+   - Empaqueta instrucciones reutilizables
+   - Ubicación: ~/.vscode/extensions/.../skills/
+
+3. CUSTOM AGENTS (.AGENT.MD / AGENTS.MD)
+   - Define agentes especializados para tareas específicas
+   - Configura restricciones de herramientas
+   - Crea workflows personalizados
+   - Ubicación: workspace o configuración global
+
+4. FRONTMATTER YAML
+   Cada archivo de personalización puede incluir metadatos:
+   ---
+   applyTo: "**/*.rs"           # Aplica solo a archivos Rust
+   tools: [read_file, grep_search]  # Restringe herramientas
+   priority: 100                # Define prioridad
+   ---
+
+5. MEMORIA PERSISTENTE
+   - /memories/ - Preferencias globales del usuario
+   - /memories/session/ - Notas de la sesión actual
+   - /memories/repo/ - Convenciones específicas del repositorio
+
+
+BENEFICIOS QUE OFRECE
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ PRODUCTIVIDAD:
+   • Escribe código más rápido con sugerencias inteligentes
+   • Automatiza tareas repetitivas
+   • Reduce el tiempo de búsqueda en documentación
+
+✅ CALIDAD DE CÓDIGO:
+   • Detecta errores antes de ejecutar
+   • Sugiere mejores prácticas
+   • Refactoriza código existente
+
+✅ APRENDIZAJE:
+   • Explica código complejo
+   • Enseña nuevas tecnologías
+   • Proporciona ejemplos contextuales
+
+✅ DEPURACIÓN:
+   • Identifica problemas rápidamente
+   • Sugiere soluciones
+   • Ejecuta pruebas
+
+✅ EXPLORACIÓN DE PROYECTOS:
+   • Comprende proyectos nuevos rápidamente
+   • Navega bases de código grandes
+   • Encuentra funcionalidades específicas
+
+✅ MULTILENGUAJE:
+   • Soporta prácticamente todos los lenguajes de programación
+   • Entiende múltiples frameworks y librerías
+
+
+CÓMO HACER UNA PERSONALIZACIÓN Y HACERLA PÚBLICA
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO 1: CREAR TU PERSONALIZACIÓN
+─────────────────────────────────────────────────────────────────────────────
+
+A) En tu proyecto (local):
+   1. Crea un archivo .instructions.md en la raíz de tu proyecto
+   2. Define tus reglas personalizadas:
+
+   ```markdown
+   ---
+   applyTo: "**/*.{ts,js}"
+   ---
+
+   # Instrucciones de Desarrollo
+
+   - Siempre usa TypeScript strict mode
+   - Prefiere programación funcional
+   - Documenta todas las funciones públicas
+   ```
+
+B) Como skill global:
+   1. Crea un directorio con tu skill
+   2. Incluye un archivo SKILL.md:
+
+   ```markdown
+   ---
+   name: mi-skill-rust
+   description: Experto en desarrollo Rust
+   applyTo: "**/*.rs"
+   ---
+
+   # Rust Development Expert
+
+   Cuando trabajes con Rust:
+   - Usa Result<T, E> para manejo de errores
+   - Prefiere iteradores sobre loops
+   - Aplica el principio de ownership
+   ```
+
+PASO 2: PROBAR LOCALMENTE
+─────────────────────────────────────────────────────────────────────────────
+
+1. Guarda tu archivo de personalización
+2. Abre VS Code Copilot Chat
+3. Prueba haciendo preguntas relacionadas con tu dominio
+4. Verifica que Copilot siga tus instrucciones
+5. Itera y mejora según necesites
+
+PASO 3: COMPARTIR TU PERSONALIZACIÓN
+─────────────────────────────────────────────────────────────────────────────
+
+Opción A - GITHUB REPOSITORY:
+   1. Crea un repositorio público en GitHub
+   2. Estructura sugerida:
+      mi-copilot-skill/
+      ├── README.md
+      ├── SKILL.md o .instructions.md
+      └── examples/
+   3. Documenta claramente:
+      - Qué hace tu personalización
+      - Cómo instalarla
+      - Ejemplos de uso
+   4. Comparte el link del repositorio
+
+Opción B - EXTENSION DE VS CODE:
+   1. Crea una extensión de VS Code que incluya tu skill
+   2. Publica en VS Code Marketplace
+   3. Los usuarios la instalan como cualquier extensión
+
+Opción C - GIST DE GITHUB:
+   1. Crea un GitHub Gist con tu archivo
+   2. Marca como público
+   3. Comparte el enlace
+
+Opción D - COMUNIDAD/FOROS:
+   1. Comparte en GitHub Discussions
+   2. Publica en Reddit (r/github, r/programming)
+   3. Comparte en Discord/Slack de desarrollo
+
+PASO 4: DOCUMENTACIÓN PARA USUARIOS
+─────────────────────────────────────────────────────────────────────────────
+
+Incluye en tu README.md:
+
+```markdown
+# Mi Skill Personalizado para GitHub Copilot
+
+## Instalación
+
+1. Descarga el archivo SKILL.md
+2. Colócalo en tu proyecto o en:
+   - Windows: %USERPROFILE%\.vscode\extensions\
+   - Mac/Linux: ~/.vscode/extensions/
+
+## Uso
+
+Este skill se activa automáticamente cuando [condición].
+
+## Ejemplos
+
+[Incluye ejemplos de uso]
+```
+
+
+CONSEJOS AVANZADOS
+═══════════════════════════════════════════════════════════════════════════════
+
+🎯 MEJORES PRÁCTICAS:
+   • Sé específico en tus instrucciones
+   • Usa applyTo para limitar el alcance
+   • Prueba exhaustivamente antes de compartir
+   • Mantén las personalizaciones actualizadas
+
+🔧 DEBUGGING:
+   • Si Copilot ignora tus instrucciones, revisa el frontmatter YAML
+   • Verifica que applyTo coincida con tus archivos
+   • Usa prioridades más altas si hay conflictos
+
+📚 RECURSOS:
+   • GitHub Copilot Documentation
+   • VS Code Extension API
+   • Comunidad de GitHub Discussions
+
+
+RESUMEN
+═══════════════════════════════════════════════════════════════════════════════
+
+GitHub Copilot es una herramienta poderosa que:
+✓ Te asiste en programación con IA avanzada (Claude Sonnet 4.5)
+✓ Se integra perfectamente con VS Code
+✓ Puede leer, editar y crear archivos automáticamente
+✓ Ejecuta comandos de terminal
+✓ Es altamente personalizable mediante archivos de configuración
+✓ Permite crear y compartir skills personalizados
+✓ Mejora significativamente la productividad del desarrollo
+
+Las personalizaciones te permiten adaptar Copilot a tu estilo, tu equipo o tu
+dominio específico, y puedes compartirlas fácilmente con la comunidad.
+
+
+═══════════════════════════════════════════════════════════════════════════════
+Fecha de creación: 1 de abril de 2026
+Versión: GitHub Copilot con Claude Sonnet 4.5
+═══════════════════════════════════════════════════════════════════════════════

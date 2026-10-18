@@ -1,0 +1,139 @@
+﻿# Dependencias
+node_modules/
+
+# Variables de entorno (NUNCA subir secretos)
+.env
+.env.local
+.env.production
+*.env.local
+
+# Cualquier .env.* (variantes de entorno) queda excluido...
+.env.*
+# ...salvo los archivos de EJEMPLO, que son seguros y deben versionarse
+!.env.example
+!**/.env.example
+
+# Respaldos de saneo de secretos y copias locales con posibles claves
+*.secret-backup-*
+*.bak
+*.bak-*
+
+# Logs de ejecucion / depuracion
+*.log
+logs/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+# Archivos y carpetas locales sensibles
+ftp-credentials.txt
+variables-para-copiar.txt
+*.pem
+*.pfx
+*.key
+# Logs y artefactos de despliegues anteriores
+app-logs/
+app-logs2/
+azure-logs/
+logs-diagnostico/
+logs-final/
+deploy-extracted/
+verify-zip/
+deploy-check/
+.backups/
+# Artefactos de despliegue
+deploy-directo.zip
+deploy-full.zip
+*.zip
+# Respaldos de archivos de entorno
+.env.example.bak-*
+.env.example.fase*
+.env.production.secret-backup-*
+
+# Exclusiones adicionales para publicación pública
+.env
+.env.*
+**/.env
+**/.env.*
+*.pem
+*.pfx
+*.key
+*.log
+*.zip
+*.bak
+*.bak-*
+*.secret-backup-*
+ftp-credentials.txt
+variables-para-copiar.txt
+app-logs/
+app-logs2/
+azure-logs/
+logs-diagnostico/
+logs-final/
+deploy-check/
+deploy-extracted/
+verify-zip/
+.backups/
+node_modules/
+coverage/
+
+# Exclusiones para mantener el repositorio centrado en IA-Educativa
+/backend/.env.example
+/backend/.env.production.example
+/public/
+/src-rust/
+/spec/
+/.github/workflows/azure-deploy.yml
+
+# Archivos históricos de despliegue Azure
+/AZURE_QUICKSTART.md
+/DESPLIEGUE_AZURE.md
+/GUIA_SERVICIOS_AZURE.md
+/VARIABLES_ENTORNO_AZURE.md
+/backend/COMANDOS_AZURE.md
+/backend/deploy-azure.ps1
+/deploy-to-azure.ps1
+/crear-paquete-azure.ps1
+/crear-paquete-ec2.ps1
+/crear-zip-*.ps1
+/despliegue-*.ps1
+/subir-a-kudu.ps1
+/subir-via-api.ps1
+
+# Copias de seguridad con sufijos de fases o fechas
+*.fase*
+*.bak*
+*.secret-backup*
+
+# Archivos históricos de despliegue Azure
+/AZURE_QUICKSTART.md
+/DESPLIEGUE_AZURE.md
+/GUIA_SERVICIOS_AZURE.md
+/VARIABLES_ENTORNO_AZURE.md
+/backend/COMANDOS_AZURE.md
+/backend/deploy-azure.ps1
+/deploy-to-azure.ps1
+/crear-paquete-azure.ps1
+/crear-paquete-ec2.ps1
+/crear-zip-*.ps1
+/despliegue-*.ps1
+/subir-a-kudu.ps1
+/subir-via-api.ps1
+
+# Copias de seguridad con sufijos de fases o fechas
+*.fase*
+*.bak*
+*.secret-backup*
+
+# Entornos locales y despliegues heredados
+/backend/.env
+/backend/.env.*
+/despliegue-ftp.ps1
+/despliegue-kudu-*.ps1
+/instalar-azure-cli.ps1
+/instrucciones-kudu.ps1

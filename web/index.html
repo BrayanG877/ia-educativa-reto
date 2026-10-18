@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma Educativa IA</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Barra superior: usuario, acciones -->
+    <header class="topbar">
+        <div class="topbar-brand">🎓 IA Educativa</div>
+        <div class="topbar-actions">
+            <button class="topbar-btn" id="newConversationButton" title="Nueva conversación">
+                <span>＋</span> Nueva
+            </button>
+            <button class="topbar-btn" id="historyButton" title="Historial de conversaciones">
+                <span>🕘</span> Historial
+            </button>
+            <button class="topbar-btn" id="statsButton" title="Mi progreso y ranking">
+                <span>📊</span> Progreso
+            </button>
+            <div class="topbar-user" id="userBadge" title="Sesión iniciada">
+                <span class="avatar" id="userAvatar">?</span>
+                <span class="user-name" id="userName">...</span>
+            </div>
+            <button class="topbar-btn danger" id="logoutButton" title="Cerrar sesión">
+                <span>⎋</span> Salir
+            </button>
+        </div>
+    </header>
+
+    <!-- Panel lateral: historial de conversaciones -->
+    <aside class="side-panel hidden" id="historyPanel">
+        <div class="side-panel-head">
+            <h3>Mis conversaciones</h3>
+            <button class="side-panel-close" id="historyClose">×</button>
+        </div>
+        <div class="side-panel-body" id="historyList">
+            <p class="side-panel-empty">Cargando...</p>
+        </div>
+    </aside>
+
+    <!-- Panel lateral: progreso y ranking -->
+    <aside class="side-panel hidden" id="statsPanel">
+        <div class="side-panel-head">
+            <h3>Mi progreso</h3>
+            <button class="side-panel-close" id="statsClose">×</button>
+        </div>
+        <div class="side-panel-body" id="statsList">
+            <p class="side-panel-empty">Cargando...</p>
+        </div>
+    </aside>
+
+    <main class="page">
+        <!-- Área de mensajes (oculta inicialmente) -->
+        <div class="messages-area hidden" id="messagesArea">
+            <div class="messages-container" id="messagesContainer">
+                <!-- Los mensajes aparecerán aquí -->
+            </div>
+        </div>
+
+        <!-- Pantalla de bienvenida -->
+        <div class="welcome-screen" id="welcomeScreen">
+            <div class="welcome">Bienvenido</div>
+            <h1 class="headline">¿Qué quieres aprender hoy?</h1>
+        </div>
+
+        <!-- Caja de prompt principal -->
+        <section class="prompt-box">
+            <input
+                type="text"
+                class="prompt-input"
+                id="messageInput"
+                placeholder="Escribe tu pregunta..."
+                aria-label="Campo de entrada de mensaje"
+            />
+
+            <div class="prompt-actions">
+                <div class="left-actions">
+                    <!-- Botón "+" para desplegar opciones de materias -->
+                    <button class="icon-button" id="optionsButton" aria-label="Opciones de estudio">
+                        <span class="plus-icon">+</span>
+                    </button>
+
+                    <!-- Botón de Herramientas -->
+                    <button class="text-button" id="toolsButton" aria-label="Herramientas">
+                        <span class="sliders-icon">
+                            <i></i>
+                            <b></b>
+                        </span>
+                        <span class="small">Herramientas</span>
+                    </button>
+                </div>
+
+                <div class="right-actions">
+                    <!-- Botón de micrófono (preparado para futuras fases) -->
+                    <button class="icon-button microphone" id="micButton" aria-label="Micrófono">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="25" height="25">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Chips de sugerencias -->
+        <div class="chips" id="suggestionsChips">
+            <div class="chip" data-action="subject" data-subject="matematicas">
+                <span class="emoji">🔢</span> Matemáticas
+            </div>
+            <div class="chip" data-action="subject" data-subject="biologia">
+                <span class="emoji">🔬</span> Biología
+            </div>
+            <div class="chip" data-action="subject" data-subject="ingles">
+                <span class="emoji">🗣️</span> Inglés
+            </div>
+            <div class="chip" data-action="subject" data-subject="quimica">
+                <span class="emoji">⚗️</span> Química
+            </div>
+            <div class="chip" data-action="subject" data-subject="español">
+                <span class="emoji">📖</span> Español
+            </div>
+            <div class="chip" data-action="help">
+                <span class="emoji">🤔</span> Ayúdame a aprender
+            </div>
+            <div class="chip" data-action="icfes">
+                <span class="emoji">📝</span> Preparar ICFES
+            </div>
+        </div>
+
+        <!-- Indicador de materia seleccionada -->
+        <div class="subject-indicator hidden" id="subjectIndicator">
+            <span class="indicator-text" id="indicatorText">Materia no seleccionada</span>
+            <button class="clear-subject" id="clearSubject" aria-label="Limpiar selección">×</button>
+        </div>
+
+        <!-- Indicador de modo de conversación (socrático / ICFES / quiz) -->
+        <div class="mode-indicator" id="modeIndicator">
+            <span class="mode-dot"></span>
+            <span id="modeText">Método socrático activo</span>
+        </div>
+
+        <!-- Menú desplegable de opciones de materias -->
+        <div class="options-menu hidden" id="optionsMenu">
+            <div class="options-menu-content">
+                <section class="menu-section">
+                    <h3 class="section-title">Estudiar materias por separado</h3>
+                    <ul class="subjects-list">
+                        <li class="subject-item" data-subject="matematicas">
+                            <button class="subject-button">Matemáticas</button>
+                        </li>
+                        <li class="subject-item" data-subject="biologia">
+                            <button class="subject-button">Biología / Ciencias Naturales</button>
+                        </li>
+                        <li class="subject-item" data-subject="fisica">
+                            <button class="subject-button">Física</button>
+                        </li>
+                        <li class="subject-item" data-subject="quimica">
+                            <button class="subject-button">Química</button>
+                        </li>
+                        <li class="subject-item" data-subject="sociales">
+                            <button class="subject-button">Ciencias Sociales / Historia / Geografía</button>
+                        </li>
+                        <li class="subject-item" data-subject="español">
+                            <button class="subject-button">Español / Lengua Castellana / Literatura</button>
+                        </li>
+                        <li class="subject-item" data-subject="filosofia">
+                            <button class="subject-button">Filosofía</button>
+                        </li>
+                        <li class="subject-item" data-subject="informatica">
+                            <button class="subject-button">Informática / Tecnología</button>
+                        </li>
+                        <li class="subject-item" data-subject="ingles">
+                            <button class="subject-button">Inglés / Lenguas Extranjeras</button>
+                        </li>
+                        <li class="subject-item" data-subject="arte">
+                            <button class="subject-button">Arte / Educación Artística</button>
+                        </li>
+                        <li class="subject-item" data-subject="educacion-fisica">
+                            <button class="subject-button">Educación Física / Deportes</button>
+                        </li>
+                        <li class="subject-item" data-subject="religion">
+                            <button class="subject-button">Religión</button>
+                        </li>
+                    </ul>
+                </section>
+
+                <div class="menu-divider"></div>
+
+                <section class="menu-section">
+                    <h3 class="section-title">Preparación para pruebas</h3>
+                    <ul class="subjects-list">
+                        <li class="subject-item" data-subject="icfes">
+                            <button class="subject-button icfes-button">ICFES</button>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+
+        <!-- Menú desplegable de Herramientas -->
+        <div class="tools-menu hidden" id="toolsMenu">
+            <div class="tools-menu-content">
+                <section class="menu-section">
+                    <h3 class="section-title">Herramientas disponibles</h3>
+                    <ul class="tools-list">
+                        <li class="tool-item" data-tool="test-prep">
+                            <button class="tool-button">
+                                <span class="tool-icon">📝</span>
+                                <span class="tool-name">Preparación con test</span>
+                            </button>
+                        </li>
+                        <li class="tool-item" data-tool="quizzes">
+                            <button class="tool-button">
+                                <span class="tool-icon">❓</span>
+                                <span class="tool-name">Preparación con quizzes</span>
+                            </button>
+                        </li>
+                        <li class="tool-item" data-tool="evaluation">
+                            <button class="tool-button">
+                                <span class="tool-icon">✅</span>
+                                <span class="tool-name">Evaluacion</span>
+                            </button>
+                        </li>
+                        <li class="tool-item" data-tool="mindmap">
+                            <button class="tool-button">
+                                <span class="tool-icon">🧠</span>
+                                <span class="tool-name">Mapa Mental</span>
+                            </button>
+                        </li>
+                        <li class="tool-item" data-tool="conceptmap">
+                            <button class="tool-button">
+                                <span class="tool-icon">🗺️</span>
+                                <span class="tool-name">Mapa Conceptual</span>
+                            </button>
+                        </li>
+                        <li class="tool-item" data-tool="image-generator">
+                            <button class="tool-button">
+                                <span class="tool-icon">🖼️</span>
+                                <span class="tool-name">Generador de Imagen</span>
+                            </button>
+                        </li>
+                        <li class="tool-item" data-tool="video-generator">
+                            <button class="tool-button">
+                                <span class="tool-icon">🎬</span>
+                                <span class="tool-name">Generador de Video</span>
+                            </button>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <script src="api-client.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

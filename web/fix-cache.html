@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpiando caché...</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        h1 { margin: 0 0 10px 0; }
+        p { margin: 10px 0; opacity: 0.9; }
+        .success {
+            display: none;
+            color: #4ade80;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .success.show { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Limpiando caché y localStorage</h1>
+        <div class="spinner"></div>
+        <p id="status">Eliminando datos corruptos...</p>
+        <p class="success" id="success">✅ ¡Listo! Redirigiendo al login...</p>
+    </div>
+
+    <script>
+        console.log('=== LIMPIEZA DE CACHE INICIADA ===');
+
+        // 1. Limpiar localStorage
+        try {
+            const itemsCleared = [];
+            const user = localStorage.getItem('user');
+            const token = localStorage.getItem('auth_token');
+
+            if (user) itemsCleared.push('user');
+            if (token) itemsCleared.push('token');
+
+            localStorage.clear();
+            console.log('✓ localStorage limpiado:', itemsCleared.join(', '));
+        } catch (e) {
+            console.error('Error limpiando localStorage:', e);
+        }
+
+        // 2. Limpiar sessionStorage
+        try {
+            sessionStorage.clear();
+            console.log('✓ sessionStorage limpiado');
+        } catch (e) {
+            console.error('Error limpiando sessionStorage:', e);
+        }
+
+        // 3. Limpiar cookies
+        try {
+            document.cookie.split(";").forEach(function(c) {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+            });
+            console.log('✓ Cookies limpiadas');
+        } catch (e) {
+            console.error('Error limpiando cookies:', e);
+        }
+
+        // 4. Actualizar UI y redirigir
+        setTimeout(() => {
+            document.getElementById('status').textContent = 'Caché limpiado exitosamente';
+            document.getElementById('success').classList.add('show');
+
+            console.log('=== LIMPIEZA COMPLETA ===');
+            console.log('Redirigiendo a login.html en 1.5 segundos...');
+
+            setTimeout(() => {
+                // Forzar recarga sin caché añadiendo timestamp
+                window.location.href = 'login.html?t=' + Date.now();
+            }, 1500);
+        }, 1000);
+    </script>
+</body>
+</html>

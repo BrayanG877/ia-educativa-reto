@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico - Sistema</title>
+    <style>
+        body {
+            font-family: 'Consolas', 'Courier New', monospace;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #4ec9b0;
+            border-bottom: 2px solid #4ec9b0;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #569cd6;
+            margin-top: 30px;
+        }
+        .test-section {
+            background: #2d2d30;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid #007acc;
+        }
+        .success {
+            color: #4ec9b0;
+            border-left-color: #4ec9b0;
+        }
+        .error {
+            color: #f48771;
+            border-left-color: #f48771;
+        }
+        .warning {
+            color: #dcdcaa;
+            border-left-color: #dcdcaa;
+        }
+        pre {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 3px;
+            overflow-x: auto;
+            font-size: 13px;
+        }
+        .status-icon {
+            font-size: 20px;
+            margin-right: 10px;
+        }
+        .test-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: #252526;
+            border-radius: 3px;
+        }
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        .info-badge {
+            display: inline-block;
+            background: #3c3c3c;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Diagnóstico Completo del Sistema</h1>
+
+        <div class="test-section">
+            <h2>Estado de Carga de Scripts</h2>
+            <div id="scripts-status"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Verificación de Variables Globales</h2>
+            <div id="globals-status"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Estado de Autenticación</h2>
+            <div id="auth-status"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Elementos del DOM</h2>
+            <div id="dom-status"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>Conexión con Backend</h2>
+            <div id="backend-status"></div>
+            <button onclick="testBackendConnection()">Probar Conexión</button>
+        </div>
+
+        <div class="test-section">
+            <h2>Errores de Consola</h2>
+            <div id="console-errors"></div>
+            <pre id="error-log">Sin errores capturados aún...</pre>
+        </div>
+
+        <div class="test-section">
+            <h2>LocalStorage</h2>
+            <div id="storage-status"></div>
+            <button onclick="clearAllStorage()">Limpiar Todo</button>
+        </div>
+
+        <div class="test-section">
+            <h2>Acciones</h2>
+            <button onclick="location.href='login.html'">→ Ir a Login</button>
+            <button onclick="location.href='index.html'">→ Ir a App Principal</button>
+            <button onclick="location.href='test-connection.html'">→ Test de Conexión</button>
+            <button onclick="location.reload(true)">🔄 Recargar (Sin Caché)</button>
+        </div>
+    </div>
+
+    <script src="api-client.js"></script>
+    <script>
+        // Capturar errores
+        const errors = [];
+        const originalConsoleError = console.error;
+        console.error = function(...args) {
+            errors.push({
+                type: 'error',
+                message: args.join(' '),
+                time: new Date().toLocaleTimeString()
+            });
+            originalConsoleError.apply(console, args);
+            updateErrorLog();
+        };
+
+        window.addEventListener('error', (e) => {
+            errors.push({
+                type: 'window.error',
+                message: e.message,
+                file: e.filename,
+                line: e.lineno,
+                col: e.colno,
+                time: new Date().toLocaleTimeString()
+            });
+            updateErrorLog();
+        });
+
+        function updateErrorLog() {
+            const logEl = document.getElementById('error-log');
+            if (errors.length === 0) {
+                logEl.textContent = 'Sin errores capturados aún...';
+            } else {
+                logEl.textContent = errors.map(e =>
+                    `[${e.time}] ${e.type}: ${e.message}${e.file ? ` (${e.file}:${e.line}:${e.col})` : ''}`
+                ).join('\n');
+            }
+        }
+
+        function checkIcon(condition) {
+            return condition ? '<span class="status-icon">✅</span>' : '<span class="status-icon">❌</span>';
+        }
+
+        function runDiagnostics() {
+            // 1. Scripts
+            let scriptsHtml = '';
+            const scripts = Array.from(document.scripts);
+            scriptsHtml += `<div class="test-item">Total scripts cargados: ${scripts.length}</div>`;
+            scripts.forEach(script => {
+                const loaded = script.src ? 'loaded' : 'inline';
+                scriptsHtml += `<div class="test-item">${checkIcon(true)} ${script.src || '(inline script)'} <span class="info-badge">${loaded}</span></div>`;
+            });
+            document.getElementById('scripts-status').innerHTML = scriptsHtml;
+
+            // 2. Variables globales
+            let globalsHtml = '';
+            const checks = [
+                { name: 'API_CONFIG', exists: typeof API_CONFIG !== 'undefined' },
+                { name: 'AuthManager (class)', exists: typeof AuthManager !== 'undefined' },
+                { name: 'AIClient (class)', exists: typeof AIClient !== 'undefined' },
+                { name: 'ToolsClient (class)', exists: typeof ToolsClient !== 'undefined' },
+                { name: 'authManager (instance)', exists: typeof authManager !== 'undefined' },
+                { name: 'aiClient (instance)', exists: typeof aiClient !== 'undefined' },
+                { name: 'toolsClient (instance)', exists: typeof toolsClient !== 'undefined' }
+            ];
+
+            checks.forEach(check => {
+                const className = check.exists ? 'success' : 'error';
+                globalsHtml += `<div class="test-item ${className}">${checkIcon(check.exists)} ${check.name}</div>`;
+
+                if (check.exists && check.name.includes('instance')) {
+                    try {
+                        const instance = eval(check.name.split(' ')[0]);
+                        globalsHtml += `<pre style="margin-left: 30px; font-size: 11px;">${JSON.stringify(instance, null, 2).substring(0, 200)}...</pre>`;
+                    } catch (e) {
+                        globalsHtml += `<div style="margin-left: 30px; color: #f48771;">Error: ${e.message}</div>`;
+                    }
+                }
+            });
+            document.getElementById('globals-status').innerHTML = globalsHtml;
+
+            // 3. Autenticación
+            let authHtml = '';
+            try {
+                if (typeof authManager !== 'undefined') {
+                    const isAuth = authManager.isAuthenticated();
+                    const user = authManager.getUser();
+                    const token = authManager.getToken();
+
+                    authHtml += `<div class="test-item ${isAuth ? 'success' : 'warning'}">${checkIcon(isAuth)} Autenticado: ${isAuth}</div>`;
+                    authHtml += `<div class="test-item">${checkIcon(!!token)} Token existe: ${!!token}</div>`;
+                    authHtml += `<div class="test-item">${checkIcon(!!user)} Usuario existe: ${!!user}</div>`;
+
+                    if (user) {
+                        authHtml += `<pre>${JSON.stringify(user, null, 2)}</pre>`;
+                    }
+                } else {
+                    authHtml += `<div class="test-item error">${checkIcon(false)} authManager no está definido</div>`;
+                }
+            } catch (e) {
+                authHtml += `<div class="test-item error">${checkIcon(false)} Error: ${e.message}</div>`;
+            }
+            document.getElementById('auth-status').innerHTML = authHtml;
+
+            // 4. DOM Elements
+            let domHtml = '';
+            const elements = [
+                'optionsButton', 'optionsMenu', 'toolsButton', 'toolsMenu',
+                'messageInput', 'micButton', 'messagesContainer', 'messagesArea',
+                'welcomeScreen', 'subjectIndicator'
+            ];
+
+            elements.forEach(id => {
+                const exists = !!document.getElementById(id);
+                const className = exists ? 'success' : 'error';
+                domHtml += `<div class="test-item ${className}">${checkIcon(exists)} #${id}</div>`;
+            });
+            document.getElementById('dom-status').innerHTML = domHtml;
+
+            // 5. Backend (vacío por ahora, se prueba con botón)
+            document.getElementById('backend-status').innerHTML = '<div class="test-item">Click "Probar Conexión" para verificar</div>';
+
+            // 6. LocalStorage
+            let storageHtml = '';
+            try {
+                const token = localStorage.getItem('auth_token');
+                const user = localStorage.getItem('user');
+
+                storageHtml += `<div class="test-item">${checkIcon(!!token)} auth_token: ${token ? 'Existe' : 'No existe'}</div>`;
+                storageHtml += `<div class="test-item">${checkIcon(!!user)} user: ${user ? 'Existe' : 'No existe'}</div>`;
+
+                if (token) {
+                    storageHtml += `<pre style="font-size: 11px;">Token: ${token.substring(0, 50)}...</pre>`;
+                }
+                if (user) {
+                    storageHtml += `<pre style="font-size: 11px;">${user}</pre>`;
+                }
+
+                storageHtml += `<div class="test-item info-badge">Total items: ${localStorage.length}</div>`;
+            } catch (e) {
+                storageHtml += `<div class="test-item error">${checkIcon(false)} Error: ${e.message}</div>`;
+            }
+            document.getElementById('storage-status').innerHTML = storageHtml;
+        }
+
+        async function testBackendConnection() {
+            const statusEl = document.getElementById('backend-status');
+            statusEl.innerHTML = '<div class="test-item warning">⏳ Probando conexión...</div>';
+
+            const tests = [];
+
+            // Test 1: Health check
+            try {
+                const response = await fetch('http://localhost:3001/health');
+                const data = await response.json();
+                tests.push({
+                    name: 'Health Check',
+                    success: response.ok,
+                    status: response.status,
+                    data: data
+                });
+            } catch (e) {
+                tests.push({
+                    name: 'Health Check',
+                    success: false,
+                    error: e.message
+                });
+            }
+
+            // Test 2: Subjects
+            try {
+                const response = await fetch('http://localhost:3001/api/chat/subjects');
+                const data = await response.json();
+                tests.push({
+                    name: 'Get Subjects',
+                    success: response.ok && data.success,
+                    status: response.status,
+                    data: data
+                });
+            } catch (e) {
+                tests.push({
+                    name: 'Get Subjects',
+                    success: false,
+                    error: e.message
+                });
+            }
+
+            // Render results
+            let html = '';
+            tests.forEach(test => {
+                const className = test.success ? 'success' : 'error';
+                html += `<div class="test-item ${className}">`;
+                html += `${checkIcon(test.success)} ${test.name}`;
+                if (test.status) html += ` <span class="info-badge">HTTP ${test.status}</span>`;
+                html += `</div>`;
+
+                if (test.data) {
+                    html += `<pre style="margin-left: 30px; font-size: 11px;">${JSON.stringify(test.data, null, 2).substring(0, 300)}...</pre>`;
+                }
+                if (test.error) {
+                    html += `<div style="margin-left: 30px; color: #f48771;">Error: ${test.error}</div>`;
+                }
+            });
+
+            statusEl.innerHTML = html;
+        }
+
+        function clearAllStorage() {
+            if (confirm('¿Limpiar TODO el localStorage y sessionStorage?')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                alert('✅ Storage limpiado. Recargando página...');
+                location.reload(true);
+            }
+        }
+
+        // Ejecutar diagnósticos al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🔍 Ejecutando diagnósticos...');
+            runDiagnostics();
+        });
+
+        // También ejecutar después de un pequeño delay por si hay carga asíncrona
+        setTimeout(() => {
+            console.log('🔍 Re-ejecutando diagnósticos después de 1s...');
+            runDiagnostics();
+        }, 1000);
+    </script>
+</body>
+</html>

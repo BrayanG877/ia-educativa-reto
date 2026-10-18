@@ -1,0 +1,39 @@
+# Node.js
+node_modules/
+npm-debug.log
+
+# Environment
+.env
+.env.*
+
+# Git
+.git/
+.gitignore
+
+# Documentación
+*.md
+!README.md
+
+# Tests
+test/
+*.test.js
+coverage/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+logs/
+*.log
+
+# Azure
+.azure/
+iisnode/
+
+# CI/CD
+.github/
+
+# Temporales
+*.tmp
+.cache/
