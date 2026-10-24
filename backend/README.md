@@ -1,155 +1,78 @@
-# Backend - Plataforma Educativa de IA
+# Backend — IA Educativa
 
-Backend para sistema de IA educativa con método socrático, integrado con Anthropic Claude API.
+API REST en Node.js + Express para la plataforma de tutoría con IA.
 
-## Características
-
-- **IA Educativa**: Integración con Anthropic Claude para tutorización socrática
-- **Optimización de costos**: Sistema de caché con Redis para reducir llamadas a la API
-- **Seguridad**: Autenticación JWT, rate limiting, validación de contenido
-- **Escalabilidad**: Arquitectura modular preparada para crecimiento
-- **Cumplimiento legal**: Diseñado según Ley 1581 de 2012 (Colombia)
+- Guía completa del proyecto: [`../README.md`](../README.md)
+- Arquitectura y contrato de la API: [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md)
+- Variables de entorno: [`../docs/CONFIGURATION.md`](../docs/CONFIGURATION.md)
+- Desarrollo y pruebas: [`../docs/DEVELOPMENT.md`](../docs/DEVELOPMENT.md)
+- Despliegue: [`../docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md)
 
 ## Tecnologías
 
-- **Node.js** + **Express.js**: Servidor API REST
-- **PostgreSQL**: Base de datos relacional
-- **Redis**: Sistema de caché
-- **Anthropic Claude API**: Motor de inteligencia artificial
-- **JWT**: Autenticación y autorización
+- **Node.js** + **Express 4** — servidor y API REST.
+- **Microsoft SQL Server** (`mssql`) — usuarios, historial, métricas y evidencias del agente.
+- **Redis** (`ioredis`) — caché de respuestas. Opcional.
+- **JWT** (`jsonwebtoken`) + `bcryptjs` — autenticación y hash de contraseñas.
+- **Joi** — validación de entrada.
+- **helmet**, `cors`, `express-rate-limit` — cabeceras, CORS y límite de peticiones.
 
-## Instalación
-
-### Prerequisitos
-
-- Node.js (v18 o superior)
-- PostgreSQL (v14 o superior)
-- Redis (v7 o superior)
-- Cuenta de Anthropic con API Key
-
-### Pasos de instalación
-
-1. Instalar dependencias:
-```bash
-cd backend
-npm install
-```
-
-2. Configurar variables de entorno:
-```bash
-cp .env.example .env
-# Editar .env con tus credenciales
-```
-
-3. Crear base de datos:
-```bash
-# Ejecutar script de inicialización (próximamente)
-npm run db:init
-```
-
-4. Iniciar servidor en modo desarrollo:
-```bash
-npm run dev
-```
-
-## Estructura del proyecto
+## Estructura
 
 ```
 backend/
 ├── src/
-│   ├── server.js              # Punto de entrada
-│   ├── config/                # Configuraciones
-│   │   ├── database.js        # Configuración PostgreSQL
-│   │   ├── redis.js           # Configuración Redis
-│   │   └── anthropic.js       # Configuración Anthropic Claude
-│   ├── routes/                # Rutas de la API
-│   │   ├── auth.routes.js     # Autenticación
-│   │   ├── chat.routes.js     # Chat con IA
-│   │   ├── subjects.routes.js # Materias
-│   │   └── metrics.routes.js  # Métricas y progreso
-│   ├── controllers/           # Controladores
-│   │   ├── auth.controller.js
-│   │   ├── chat.controller.js
-│   │   └── metrics.controller.js
-│   ├── services/              # Lógica de negocio
-│   │   ├── ai.service.js      # Servicio de IA
-│   │   ├── cache.service.js   # Servicio de caché
-│   │   ├── moderation.service.js # Moderación de contenido
-│   │   └── prompt.service.js  # Gestión de prompts
-│   ├── models/                # Modelos de base de datos
-│   │   ├── User.js
-│   │   ├── Conversation.js
-│   │   └── Metrics.js
-│   ├── middleware/            # Middlewares
-│   │   ├── auth.middleware.js
-│   │   ├── validation.middleware.js
-│   │   └── rateLimit.middleware.js
-│   └── utils/                 # Utilidades
-│       ├── logger.js
-│       └── errors.js
-├── database/                  # Scripts de base de datos
-│   └── schema.sql
-├── .env.example
-├── .gitignore
-├── package.json
-└── README.md
+│   ├── server.js            # Punto de entrada y arranque
+│   ├── config/              # ai.config, anthropic, database, redis
+│   ├── routes/              # auth, chat, metrics, tools
+│   ├── controllers/         # Lógica de cada endpoint
+│   ├── middleware/          # auth (JWT), error, rateLimit
+│   └── services/            # ai.service, ai.providers, tutor.agent,
+│                            # tutor.integration, cache, moderation, prompt
+├── database/                # Esquema y migraciones SQL Server
+├── test/                    # Suites automatizadas (node:test) + runner
+├── scripts/start-prod.js    # Lanzador de producción multiplataforma
+├── serve-web.js             # Servidor estático local del frontend
+├── .env.example             # Plantilla de variables (sin secretos)
+├── .env.production.example  # Plantilla de producción (sin secretos)
+└── Dockerfile
 ```
 
-## API Endpoints (Planificados)
+## Instalación
 
-### Autenticación
-- `POST /api/auth/register` - Registro de usuario
-- `POST /api/auth/login` - Inicio de sesión
-- `POST /api/auth/logout` - Cierre de sesión
+```bash
+cd backend
+npm install
+cp .env.example .env      # completar con valores reales
+```
 
-### Chat con IA
-- `POST /api/chat/message` - Enviar mensaje a la IA
-- `GET /api/chat/history` - Obtener historial de conversación
-- `DELETE /api/chat/clear` - Limpiar conversación
+Aplicar los scripts de `database/` en el orden indicado en
+[`../docs/DEPLOYMENT.md`](../docs/DEPLOYMENT.md).
 
-### Materias
-- `GET /api/subjects` - Listar materias disponibles
-- `POST /api/subjects/select` - Seleccionar materia activa
+## Scripts
 
-### Métricas
-- `GET /api/metrics/user` - Obtener métricas del usuario
-- `GET /api/metrics/ranking` - Obtener ranking (para profesores)
+| Comando | Acción |
+|---|---|
+| `npm start` | `node src/server.js` |
+| `npm run dev` | `nodemon src/server.js` |
+| `npm run prod` | Arranque con `NODE_ENV=production` (multiplataforma) |
+| `npm test` | Ejecuta todas las suites con `test/run-tests.js` |
+| `npm run serve-web` | Sirve `../web` en `http://localhost:3000` |
 
-## Características de Seguridad
+## Endpoints
 
-- Rate limiting por usuario
-- Validación de entrada con Joi
-- Moderación de contenido educativo
-- Encriptación de contraseñas con bcrypt
-- Protección CORS configurada
-- Headers de seguridad con Helmet
+Ver la tabla completa en [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md).
+Resumen: `/api/auth`, `/api/chat`, `/api/tools`, `/api/metrics`, más `/health` y
+`/api/ai/providers` para diagnóstico.
 
-## Optimización de Costos
+## Proveedores de IA
 
-- Caché de respuestas frecuentes en Redis
-- Límite de tokens por request
-- Historial de conversación limitado (últimos 5 mensajes)
-- Sistema de throttling
+`anthropic`, `reto` (RETO PLTK, modelo `grok-4.6`), `gemini`, `groq`,
+`openrouter` y `ollama`. La selección y el respaldo se describen en
+[`../docs/CONFIGURATION.md`](../docs/CONFIGURATION.md).
 
-## Cumplimiento Legal
+## Seguridad
 
-- Protección de datos según Ley 1581 de 2012
-- Logs de auditoría
-- Consentimiento de padres (sistema pendiente)
-- Filtrado de contenido no educativo
-
-## Estado del Proyecto
-
-**Fase actual**: Fase 2 - Implementación de Backend
-
-- [x] Estructura base del proyecto
-- [ ] Integración con Anthropic Claude API
-- [ ] Esquema de base de datos PostgreSQL
-- [ ] Sistema de caché con Redis
-- [ ] Endpoints REST básicos
-- [ ] Sistema de moderación
-- [ ] Implementación de prompts socráticos
-
-## Licencia
-
-Proyecto educativo - En desarrollo
+- `.env` y `.env.production` están excluidos por `.gitignore`.
+- Las pruebas eliminan las credenciales del entorno y bloquean la red.
+- Ninguna respuesta HTTP ni log incluye valores de claves.

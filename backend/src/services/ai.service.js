@@ -144,9 +144,10 @@ function toAppError(error, providerName) {
     const s = error && error.status;
 
     if (s === 401 || s === 403) {
+        const varKey = providerName === 'reto' ? 'RETO_KEY' : 'la API key del proveedor';
         return new AppError(
             `El servicio de IA (${providerName}) rechazó las credenciales. ` +
-            `Revisa la API key del proveedor en backend/.env`,
+            `Revisa ${varKey} en la configuración del backend`,
             503
         );
     }
@@ -155,7 +156,8 @@ function toAppError(error, providerName) {
         const pistas = {
             groq: 'Lista los modelos de tu cuenta en https://api.groq.com/openai/v1/models y pon uno vigente en GROQ_MODEL.',
             gemini: 'Lista los modelos de tu key en https://generativelanguage.googleapis.com/v1beta/models y pon uno vigente en GEMINI_MODEL.',
-            anthropic: 'Usa un ID vigente en ANTHROPIC_MODEL (p. ej. claude-sonnet-4-5).'
+            anthropic: 'Usa un ID vigente en ANTHROPIC_MODEL (p. ej. claude-sonnet-4-5).',
+            reto: 'Lista los modelos del gateway (GET {RETO_BASE_URL}/models) y pon uno vigente en RETO_MODEL (p. ej. grok-4.6).'
         };
         const pista = pistas[providerName] || 'Revisa la variable de modelo en backend/.env.';
         return new AppError(
@@ -362,7 +364,10 @@ async function generateWithProvider({ provider, providerName, message, subject, 
             name: error.name,
             status: error.status,
             type: error.type,
-            message: error.message
+            message: error.message,
+            // Pista técnica del adaptador (variable/endpoint a revisar). No es
+            // un secreto: nunca contiene claves ni cabeceras.
+            ...(error.hint && { hint: error.hint })
         });
 
         // Mensaje apto para el estudiante + codigo HTTP correcto, clasificado por

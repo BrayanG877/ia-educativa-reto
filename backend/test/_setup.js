@@ -21,6 +21,23 @@ const Module = require('module');
 require('./_aislamiento');
 
 // ------------------------------------------------------------------
+// 1b) Neutralizar TODAS las credenciales de proveedores de IA.
+//     Motivo (evidencia): backend/.env contiene credenciales REALES
+//     (RETO_KEY, GROQ_API_KEY, GEMINI_API_KEY...). Si una prueba deja una
+//     clave CENTINELA o real en process.env, una comprobación de
+//     disponibilidad (/health, /api/ai/providers) puede salir a la red con un
+//     valor que no es una credencial válida. Ninguna prueba debe contactar a
+//     un proveedor externo: cada prueba que necesite una clave la define
+//     explícitamente ('dummy') en su propio escenario.
+// ------------------------------------------------------------------
+for (const k of [
+    'ANTHROPIC_API_KEY', 'GROQ_API_KEY', 'GEMINI_API_KEY', 'OPENROUTER_API_KEY',
+    'RETO_KEY', 'OLLAMA_ENABLED'
+]) {
+    delete process.env[k];
+}
+
+// ------------------------------------------------------------------
 // 2) Interceptar el cargador de módulos para proveer stubs de ioredis/mssql.
 //    Se hace antes de que cualquier módulo de src/ los requiera.
 // ------------------------------------------------------------------

@@ -12,7 +12,8 @@
  *     { text: string, inputTokens: number, outputTokens: number }
  *
  * El proveedor se elige con la variable de entorno AI_PROVIDER:
- *   anthropic (por defecto) | gemini | groq | openrouter | ollama
+ *   groq (por defecto si falta) | reto (gateway de Grok) | gemini |
+ *   openrouter | anthropic | ollama
  *
  * Así el flujo pregunta -> IA -> respuesta, el historial, la validación,
  * los prompts socráticos y todas las opciones siguen funcionando igual.
@@ -265,28 +266,51 @@ async function groqCompletion({ system, messages, model, maxTokens, temperature 
 // ------------------------------------------------------------------
 // RETO PLTK (compatible OpenAI)
 // ------------------------------------------------------------------
-// IMPORTANTE DE SEGURIDAD (SSRF): la URL base es una CONSTANTE fija en código,
-// NO se lee de variables de entorno ni del cliente. De este modo un valor
-// controlado por el usuario del chat JAMÁS puede redirigir la petición (que
-// lleva credenciales) a un host arbitrario.
+// IMPORTANTE DE SEGURIDAD (SSRF): la URL base NUNCA procede de la petición del
+// cliente ni de una variable controlada por el usuario del chat. Solo puede ser
+// la constante de código o RETO_BASE_URL, que es configuración del operador.
 //
-// DATOS NO VERIFICADOS: base_url, endpoint y modelo provienen de información
-// proporcionada por el usuario, NO de una comprobación real de compatibilidad.
-// Por eso el adaptador no asume el contrato OpenAI de respuesta más allá de lo
-// validado de forma defensiva (choices[0].message.content) y falla de forma
-// controlada si el formato es distinto.
-// URL base del proveedor RETO PLTK. Se permite sobreescribir con la variable
-// de entorno RETO_BASE_URL (igual que GROQ_API_BASE / OLLAMA_HOST), de modo que
-// la configuración del .env sea la fuente de verdad. El valor por defecto es el
+// VERIFICADO (prueba real, sin reintentos): GET /v1/models del gateway devuelve
+// HTTP 200 con 14 modelos, entre ellos 'grok-4.6', y POST /v1/chat/completions
+// responde correctamente con grok-4.6. El formato es compatible con OpenAI
+// ({model, messages, max_tokens, temperature} -> choices[0].message.content).
+//
+// URL base del proveedor RETO PLTK. Se puede sobreescribir con la variable de
+// entorno RETO_BASE_URL (igual que GROQ_API_BASE / OLLAMA_HOST), de modo que la
+// configuración del .env sea la fuente de verdad. El valor por defecto es el
 // endpoint oficial documentado.
 const RETO_DEFAULT_BASE_URL = 'https://api.reto.pltk.mx/v1';
+
+/**
+ * Normaliza la URL base de RETO PLTK:
+ *  - '' o ausente  -> endpoint oficial por defecto.
+ *  - Solo http/https (un valor inválido en el .env no debe producir una URL rota).
+ *  - Sin barras finales, para no generar '.../v1//chat/completions'.
+ */
+function retoBaseUrl() {
+    const raw = (process.env.RETO_BASE_URL || '').trim();
+    if (!raw) return RETO_DEFAULT_BASE_URL;
+    let parsed;
+    try { parsed = new URL(raw); } catch (_) { return RETO_DEFAULT_BASE_URL; }
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return RETO_DEFAULT_BASE_URL;
+    return raw.replace(/\/+$/, '');
+}
+
+/**
+ * Adjunta a un error de proveedor una pista técnica NO sensible (variable o
+ * endpoint a revisar). Nunca incluye el valor de la clave ni cabeceras.
+ */
+function withHint(error, hint) {
+    if (error && !error.hint) error.hint = hint;
+    return error;
+}
 
 async function retoCompletion({ system, messages, model, maxTokens, temperature }) {
     const key = process.env.RETO_KEY;
     if (!key) {
         const e = new Error('RETO_KEY no configurada');
         e.status = 401;
-        throw e;
+        throw withHint(e, 'Falta RETO_KEY en el entorno del backend');
     }
 
     // El formato documentado admite model + messages. El system prompt se envía
@@ -295,13 +319,13 @@ async function retoCompletion({ system, messages, model, maxTokens, temperature 
         ? [{ role: 'system', content: system }, ...messages]
         : messages;
 
-    // Base configurable por entorno; si falta o está vacía, se usa el default.
-    const base = (process.env.RETO_BASE_URL || '').trim() || RETO_DEFAULT_BASE_URL;
+    const base = retoBaseUrl();
+    const modelName = model || process.env.RETO_MODEL || DEFAULT_MODELS.reto;
 
     const { status, data, retryAfterSeconds } = await postJson(
         `${base}/chat/completions`,
         {
-            model: model || process.env.RETO_MODEL || DEFAULT_MODELS.reto,
+            model: modelName,
             messages: chatMessages,
             max_tokens: maxTokens || DEFAULT_MAX_TOKENS,
             temperature: temperature ?? 0.7
@@ -310,16 +334,37 @@ async function retoCompletion({ system, messages, model, maxTokens, temperature 
     );
 
     if (status >= 400) {
-        const err = new Error(data?.error?.message || `RETO PLTK HTTP ${status}`);
+        // Mensaje del upstream (formato OpenAI {error:{message}} o texto plano),
+        // recortado para el log. NUNCA contiene la clave.
+        const upstream = data?.error?.message || data?.message || `RETO PLTK HTTP ${status}`;
+        const err = new Error(String(upstream).slice(0, 300));
         err.status = status;
         if (Number.isFinite(retryAfterSeconds)) err.retryAfterSeconds = retryAfterSeconds;
+        // Pistas de diagnóstico por código (sin secretos): distinguen credencial
+        // inválida, modelo inexistente, base URL equivocada o cuota agotada.
+        const pistas = {
+            400: `Solicitud rechazada: revisa el modelo '${modelName}' y el formato de mensajes`,
+            401: 'RETO_KEY rechazada por el gateway (Bearer inválido o revocado)',
+            403: 'La clave no tiene permiso para este modelo en el gateway',
+            404: `Endpoint o modelo no encontrado. Verifica RETO_BASE_URL (${base}) y RETO_MODEL (${modelName})`,
+            429: 'El gateway aplicó límite de solicitudes o cuota'
+        };
+        if (pistas[status]) err.hint = pistas[status];
+        if (status === 408 || status === 429 || status >= 500) err.recoverable = true;
         throw err;
     }
 
     // Normalización defensiva. Si el formato real difiere del esperado,
     // assertValidText lo convierte en un error controlado (no en un éxito falso).
+    let text;
+    try {
+        text = assertValidText(data?.choices?.[0]?.message?.content, 'RETO PLTK');
+    } catch (e) {
+        throw withHint(e, 'Respuesta 200 sin choices[0].message.content (formato distinto o presupuesto de tokens agotado)');
+    }
+
     return {
-        text: assertValidText(data?.choices?.[0]?.message?.content, 'RETO PLTK'),
+        text,
         inputTokens: data?.usage?.prompt_tokens || 0,
         outputTokens: data?.usage?.completion_tokens || 0
     };
@@ -497,8 +542,9 @@ const PROVIDERS = {
  * NOTA (dos listas distintas, no confundir):
  *   - AI_FALLBACK_PROVIDERS (ai.config.fallbackProviders) = orden del RESPALDO
  *     cuando el proveedor activo falla. Es la lista que usa ESTA función.
- *   - FALLBACK_ORDER (abajo) = orden para ELEGIR el proveedor activo cuando
- *     AI_PROVIDER no está definido o su clave falta (getProviderName).
+ *   - FALLBACK_ORDER (abajo) = orden para ELEGIR el proveedor activo SOLO cuando
+ *     AI_PROVIDER no está definido o es desconocido (getProviderName). Si la
+ *     selección es explícita, nunca se sustituye.
  * No existe ninguna variable AI_FALLBACK_ORDER en el proyecto.
  */
 function getSecondaryProvider(activeId) {
@@ -518,8 +564,8 @@ function getSecondaryProvider(activeId) {
 
 /**
  * Orden de preferencia para ELEGIR el proveedor ACTIVO cuando AI_PROVIDER no
- * está definido o su clave falta (ver getProviderName). Los gratuitos primero;
- * Anthropic al final por ser de pago.
+ * está definido o es desconocido (ver getProviderName). Los gratuitos primero;
+ * Anthropic al final por ser de pago. NO se usa si hay selección explícita.
  *
  * OJO: NO es lo mismo que AI_FALLBACK_PROVIDERS (orden del RESPALDO ante un
  * fallo del activo). Son dos listas con propósitos distintos.
@@ -527,27 +573,51 @@ function getSecondaryProvider(activeId) {
 const FALLBACK_ORDER = ['groq', 'gemini', 'openrouter', 'ollama', 'anthropic'];
 
 /**
- * Nombre del proveedor activo.
- * - Si AI_PROVIDER está definido y ese proveedor está configurado, se usa.
- * - Si el proveedor pedido no está configurado (p. ej. sin API key), se cae al
- *   primer proveedor configurado disponible, para que el sistema no quede
- *   inutilizable por una variable sin rellenar.
- * - Si no hay ninguno configurado, se devuelve el solicitado (o 'groq') para
- *   que el mensaje de error indique qué configurar.
+ * Nombre del proveedor activo. FUENTE ÚNICA de la decisión de enrutado.
+ *
+ * - AI_PROVIDER definido y con credencial -> se usa EXACTAMENTE ese proveedor.
+ * - AI_PROVIDER definido SIN credencial -> NO se cambia de proveedor: se
+ *   devuelve el solicitado y el flujo falla con un error claro indicando qué
+ *   variable falta. (Antes se caía silenciosamente al primer proveedor de
+ *   FALLBACK_ORDER: con AI_PROVIDER=reto y RETO_KEY ausente, el tráfico se
+ *   desviaba a Groq/Gemini sin evidencia en la interfaz, y las respuestas
+ *   dejaban de venir de Grok.)
+ * - AI_PROVIDER ausente o desconocido -> selección por FALLBACK_ORDER (solo
+ *   aquí, porque no hay una selección explícita que respetar).
  */
 function getProviderName() {
-    const requested = (process.env.AI_PROVIDER || '').toLowerCase();
+    const requested = (process.env.AI_PROVIDER || '').trim().toLowerCase();
 
-    if (requested && PROVIDERS[requested] && PROVIDERS[requested].configured()) {
-        return requested;
+    if (requested && PROVIDERS[requested]) {
+        return requested; // respeta la selección explícita, tenga clave o no
     }
 
-    // El solicitado no existe o no está configurado: buscar uno utilizable.
+    // Sin selección explícita válida: buscar uno utilizable en el orden heredado.
     const disponible = FALLBACK_ORDER.find(id => PROVIDERS[id].configured());
     if (disponible) return disponible;
 
-    // Nada configurado: devolver el solicitado válido o 'groq' como pista.
-    return (requested && PROVIDERS[requested]) ? requested : 'groq';
+    return 'groq'; // pista para el mensaje de error (nada configurado)
+}
+
+/**
+ * Diagnóstico de la selección (para /health y logs de arranque; sin secretos).
+ * Distingue "proveedor activo" de "proveedor configurado pero sin credencial".
+ */
+function describeSelection() {
+    const id = getProviderName();
+    const p = PROVIDERS[id];
+    const requested = (process.env.AI_PROVIDER || '').trim().toLowerCase();
+    return {
+        active: id,
+        requested: requested || null,
+        configured: p.configured(),
+        model: p.model(),
+        explicit: !!requested,
+        // True si la selección explícita no coincide con el proveedor que se
+        // usará: NO ocurre en el flujo normal (ya no hay sustitución), pero se
+        // expone para que nunca pase desapercibido en producción.
+        mismatch: !!requested && requested !== id
+    };
 }
 
 /** Objeto del proveedor activo. */
@@ -644,7 +714,15 @@ async function checkAvailability(id, { force = false } = {}) {
                 headers: { 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}` }
             });
             result = clasificarHttp(r.status);
-        } else {
+        } else if (id === 'reto') {
+            // Gateway de Grok: GET /models verifica credencial y conectividad sin
+            // consumir cuota de generación. (Antes RETO caía en la rama de Ollama
+            // y /health intentaba contactar localhost:11434.)
+            const r = await fetch(`${retoBaseUrl()}/models`, {
+                headers: { 'Authorization': `Bearer ${process.env.RETO_KEY}` }
+            });
+            result = clasificarHttp(r.status);
+        } else if (id === 'ollama') {
             // Ollama local: el propio servicio no siempre expone listado autenticado.
             // Si está deshabilitado, NO se realiza ninguna conexión (la guarda
             // !p.configured() de arriba ya lo corta; esta rama solo se alcanza
@@ -652,6 +730,8 @@ async function checkAvailability(id, { force = false } = {}) {
             const host = process.env.OLLAMA_HOST || 'http://localhost:11434';
             const r = await fetch(`${host}/api/tags`);
             result = { state: r.ok ? 'operativo' : 'temporal' };
+        } else {
+            result = { state: 'desconocido' };
         }
     } catch (error) {
         result = { state: 'temporal', detalle: 'sin conexion con el proveedor' };
@@ -674,11 +754,30 @@ function clasificarHttp(status) {
 module.exports = {
     getProvider,
     getProviderName,
+    describeSelection,
     listProviders,
     PROVIDERS,
     DEFAULT_MODELS,
     ollamaEnabled,
     getSecondaryProvider,
     checkAvailability,
-    getLastError
+    getLastError,
+    // Endpoint efectivo de cada proveedor (diagnóstico; sin credenciales).
+    getEndpoint
 };
+
+/**
+ * Endpoint efectivo que usará un proveedor (solo lectura, sin secretos).
+ * Permite comparar la configuración real con la esperada en producción.
+ */
+function getEndpoint(id) {
+    switch (id) {
+        case 'reto': return `${retoBaseUrl()}/chat/completions`;
+        case 'groq': return `${process.env.GROQ_API_BASE || 'https://api.groq.com/openai/v1'}/chat/completions`;
+        case 'anthropic': return 'https://api.anthropic.com/v1/messages';
+        case 'openrouter': return 'https://openrouter.ai/api/v1/chat/completions';
+        case 'gemini': return 'https://generativelanguage.googleapis.com/v1beta/models/<modelo>:generateContent';
+        case 'ollama': return `${process.env.OLLAMA_HOST || 'http://localhost:11434'}/api/chat`;
+        default: return null;
+    }
+}

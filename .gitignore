@@ -83,13 +83,11 @@ node_modules/
 coverage/
 
 # Exclusiones para mantener el repositorio centrado en IA-Educativa
-/backend/.env.example
-/backend/.env.production.example
+# El contenido de public/, spec/ y src-rust/ es AJENO al proyecto (no se usa).
 /public/
 /src-rust/
 /spec/
 /.github/workflows/azure-deploy.yml
-
 # Archivos históricos de despliegue Azure
 /AZURE_QUICKSTART.md
 /DESPLIEGUE_AZURE.md
@@ -104,27 +102,6 @@ coverage/
 /despliegue-*.ps1
 /subir-a-kudu.ps1
 /subir-via-api.ps1
-
-# Copias de seguridad con sufijos de fases o fechas
-*.fase*
-*.bak*
-*.secret-backup*
-
-# Archivos históricos de despliegue Azure
-/AZURE_QUICKSTART.md
-/DESPLIEGUE_AZURE.md
-/GUIA_SERVICIOS_AZURE.md
-/VARIABLES_ENTORNO_AZURE.md
-/backend/COMANDOS_AZURE.md
-/backend/deploy-azure.ps1
-/deploy-to-azure.ps1
-/crear-paquete-azure.ps1
-/crear-paquete-ec2.ps1
-/crear-zip-*.ps1
-/despliegue-*.ps1
-/subir-a-kudu.ps1
-/subir-via-api.ps1
-
 # Copias de seguridad con sufijos de fases o fechas
 *.fase*
 *.bak*
@@ -137,3 +114,80 @@ coverage/
 /despliegue-kudu-*.ps1
 /instalar-azure-cli.ps1
 /instrucciones-kudu.ps1
+# ------------------------------------------------------------------
+# Archivos retirados del repositorio durante la limpieza (quedan en disco
+# como respaldo local, pero YA NO se versionan).
+# ------------------------------------------------------------------
+/FASE2_PROGRESO.md
+/CORRECCIONES_COMPLETADAS.md
+/RESUMEN_EJECUTIVO.md
+/VINCULACION_FINAL.md
+/SIGUIENTE-PASO.md
+/SERVIDORES_ACTIVOS.md
+/DIAGNOSTICO_Y_CORRECCIONES.md
+/IMPLEMENTACION_COMPLETA.md
+/INTEGRACION_COMPLETA.md
+/README_IA_EDUCATIVA.md
+/DESPLIEGUE-MANUAL.md
+/DESPLIEGUE_NAVEGADOR.md
+/RESUMEN-ESTADO-ACTUAL.md
+/RESUMEN_BACKEND_COMPLETO.md
+/GUIA_RAPIDA.md
+/INICIO_RAPIDO.md
+/COMO-EJECUTAR.md
+/CONFIGURAR-MANUAL.md
+/CONEXION_SQLSERVER.md
+/GUIA_REDIS.md
+/INICIALIZAR_BASE_DATOS.md
+/VERIFICACION_PRODUCCION.md
+/analisis_ia_educativa.txt
+/resumen_github_copilot.txt
+/configurar-paso-a-paso.ps1
+/CONFIGURAR-TODO-AUTOMATICO.ps1
+/INSTRUCCIONES-FINALES.ps1
+/instalar-redis.ps1
+/pack-exclusions.ps1
+/saneo-secretos.ps1
+/test-produccion.ps1
+/verificar-produccion.ps1
+/verificar-simple.ps1
+/verificar-y-reiniciar.ps1
+/diagnostico-completo.ps1
+/diagnostico-profundo.ps1
+/esperar-y-verificar.ps1
+/despliegue-rapido.ps1
+/despliegue-directo.ps1
+/.deployment
+/startup.sh
+/backend/web.config
+/backend/CHECKLIST_PRODUCCION.md
+/backend/DEPLOYMENT_PRODUCCION.md
+/backend/ESTADO_FINAL.md
+/backend/JWT_IMPLEMENTADO.md
+/backend/PRUEBAS_COMPLETAS_EXITOSAS.md
+/backend/RESUMEN_PRODUCCION.md
+/backend/check-database.js
+/backend/check-subjects.js
+/backend/create-tables.js
+/backend/create-test-user.js
+/backend/diagnostico-cadena.js
+/backend/init-database.js
+/backend/manual-schema-instructions.js
+/backend/reset-database.js
+/backend/test-*.js
+/backend/test-*.ps1
+/backend/verificar-flujo-con-mock.js
+/backend/scripts/check-*.js
+# ------------------------------------------------------------------
+# Runbooks personales de operación sobre la instancia EC2.
+# Son específicos de una máquina concreta (/opt/ia-educativa), no forman
+# parte del producto y NUNCA deben versionarse.
+# ------------------------------------------------------------------
+/backend/.remote-*
+
+# ------------------------------------------------------------------
+# Logs de ejecución del backend (se regeneran al arrancar)
+# ------------------------------------------------------------------
+/backend/*.log
+# Respaldos locales creados durante auditorías/mantenimiento
+/.git-backup-*/

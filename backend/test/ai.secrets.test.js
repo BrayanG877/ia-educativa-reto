@@ -10,6 +10,20 @@ const path = require('path');
 const BACKEND = path.join(__dirname, '..');
 const CENTINELA = 'gsk_SECRETO_CENTINELA_1234567890';
 
+// Variables que estas pruebas SOBRESCRIBEN. Se restauran en cada test: si la
+// clave CENTINELA queda en process.env, una comprobación de disponibilidad
+// posterior (p. ej. /health en otra prueba) puede SALIR A LA RED con un valor
+// que no es una credencial real.
+const VARS_ALTERADAS = ['GROQ_API_KEY', 'RETO_KEY'];
+const PREVIO = {};
+for (const k of VARS_ALTERADAS) PREVIO[k] = process.env[k];
+function restaurarEntorno() {
+    for (const k of VARS_ALTERADAS) {
+        if (PREVIO[k] === undefined) delete process.env[k];
+        else process.env[k] = PREVIO[k];
+    }
+}
+
 // Captura stdout+stderr durante la ejecución de fn().
 async function capturandoSalida(fn) {
     const capturas = [];
@@ -31,28 +45,34 @@ function cargarProviders() {
 
 test('listProviders() NO expone el valor de las claves', () => {
     process.env.GROQ_API_KEY = CENTINELA;
-    const aiProviders = cargarProviders();
-    const salida = JSON.stringify(aiProviders.listProviders());
-    assert.ok(!salida.includes(CENTINELA), 'la clave no debe aparecer en la lista de proveedores');
+    try {
+        const aiProviders = cargarProviders();
+        const salida = JSON.stringify(aiProviders.listProviders());
+        assert.ok(!salida.includes(CENTINELA), 'la clave no debe aparecer en la lista de proveedores');
+    } finally { restaurarEntorno(); }
 });
 
 test('la configuración exportada NO contiene valores de claves', () => {
     process.env.GROQ_API_KEY = CENTINELA;
     process.env.RETO_KEY = CENTINELA;
-    delete require.cache[require.resolve(path.join(BACKEND, 'src/config/ai.config.js'))];
-    const aiConfig = require(path.join(BACKEND, 'src/config/ai.config.js'));
-    const s = JSON.stringify(aiConfig);
-    assert.ok(!s.includes(CENTINELA), 'la config no debe serializar el valor de la clave');
-    assert.ok(!/gsk_|sk-ant|sk-or-|AIza/.test(s), 'la config no debe contener patrones de clave');
+    try {
+        delete require.cache[require.resolve(path.join(BACKEND, 'src/config/ai.config.js'))];
+        const aiConfig = require(path.join(BACKEND, 'src/config/ai.config.js'));
+        const s = JSON.stringify(aiConfig);
+        assert.ok(!s.includes(CENTINELA), 'la config no debe serializar el valor de la clave');
+        assert.ok(!/gsk_|sk-ant|sk-or-|AIza/.test(s), 'la config no debe contener patrones de clave');
+    } finally { restaurarEntorno(); }
 });
 
 test('validate() AVISA de clave ausente SIN imprimir la clave del otro proveedor', () => {
     process.env.GROQ_API_KEY = CENTINELA;
-    delete require.cache[require.resolve(path.join(BACKEND, 'src/config/ai.config.js'))];
-    const aiConfig = require(path.join(BACKEND, 'src/config/ai.config.js'));
-    const r = aiConfig.validate();
-    const texto = JSON.stringify(r);
-    assert.ok(!texto.includes(CENTINELA), 'el informe de validación no debe contener la clave');
+    try {
+        delete require.cache[require.resolve(path.join(BACKEND, 'src/config/ai.config.js'))];
+        const aiConfig = require(path.join(BACKEND, 'src/config/ai.config.js'));
+        const r = aiConfig.validate();
+        const texto = JSON.stringify(r);
+        assert.ok(!texto.includes(CENTINELA), 'el informe de validación no debe contener la clave');
+    } finally { restaurarEntorno(); }
 });
 
 test('un error del proveedor NO incluye la clave en su mensaje', async () => {
@@ -71,6 +91,7 @@ test('un error del proveedor NO incluye la clave en su mensaje', async () => {
         capturado = e;
     } finally {
         global.fetch = origFetch;
+        restaurarEntorno();
     }
     assert.ok(capturado, 'debe lanzar error');
     assert.ok(!String(capturado.message).includes(CENTINELA), 'el mensaje de error no debe contener la clave');
@@ -100,5 +121,6 @@ test('la salida del flujo (console) no filtra la clave durante una llamada mocke
     } finally {
         aiProviders.getProvider = origGet; aiProviders.getProviderName = origName;
         cacheService.getFromCache = og; cacheService.saveToCache = os;
+        restaurarEntorno();
     }
 });

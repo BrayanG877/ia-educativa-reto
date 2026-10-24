@@ -85,15 +85,21 @@ test('ollama(2): OLLAMA_ENABLED=true habilita', () => {
 // ==================================================================
 // 3. DESHABILITADO: NO SE SELECCIONA
 // ==================================================================
-test('ollama(3): deshabilitado NO se elige como principal (AI_PROVIDER=ollama)', () => {
+test('ollama(3): deshabilitado NO se usa aunque AI_PROVIDER=ollama (ni se sustituye en silencio)', () => {
     limpiarEnv();
-    // Caso A: hay OTRO proveedor configurado (groq). Aunque se pida ollama
-    // (deshabilitado), NO debe seleccionarse: se usa el configurado.
+    // Hay OTRO proveedor configurado (groq) y el operador pidió ollama, que está
+    // deshabilitado. `getProviderName()` respeta la selección EXPLÍCITA (no se
+    // cambia de proveedor a espaldas del operador: esa sustitución silenciosa
+    // era el error que desviaba AI_PROVIDER=reto hacia Groq). La garantía
+    // defensiva se mantiene: ollama NO está configurado, así que el flujo falla
+    // con "no configurado" y NUNCA contacta localhost:11434.
     const { mod, restore } = cargarProviders({ AI_PROVIDER: 'ollama', GROQ_API_KEY: 'dummy' });
     try {
-        assert.notStrictEqual(mod.getProviderName(), 'ollama');
-        assert.strictEqual(mod.getProviderName(), 'groq');
+        assert.strictEqual(mod.getProviderName(), 'ollama', 'se respeta la selección explícita');
         assert.strictEqual(mod.PROVIDERS.ollama.configured(), false);
+        const info = mod.listProviders().find(p => p.id === 'ollama');
+        assert.strictEqual(info.active, false, 'no puede figurar como activo si no está configurado');
+        assert.strictEqual(info.enabled, false);
     } finally { restore(); limpiarEnv(); }
 });
 
@@ -138,6 +144,14 @@ test('ollama(3): checkAvailability NO conecta si está deshabilitado', async () 
     } finally { restore(); limpiarEnv(); }
 });
 
+test('ollama(3b): sin AI_PROVIDER, ollama deshabilitado no desplaza al proveedor configurado', () => {
+    limpiarEnv();
+    const { mod, restore } = cargarProviders({ OLLAMA_ENABLED: 'false', GROQ_API_KEY: 'dummy' });
+    try {
+        assert.strictEqual(mod.getProviderName(), 'groq');
+    } finally { restore(); limpiarEnv(); }
+});
+
 // ==================================================================
 // 4. HABILITADO: PUEDE SELECCIONARSE SEGÚN LAS REGLAS
 // ==================================================================
@@ -154,7 +168,8 @@ test('ollama(4): habilitado y sin otros configurados -> puede ser el activo por 
     limpiarEnv();
     const { mod, restore } = cargarProviders({ OLLAMA_ENABLED: 'true' });
     try {
-        // Sin AI_PROVIDER y sin claves de otros, FALLBACK_ORDER llega a ollama.
+        // Sin AI_PROVIDER (ninguna selección explícita) y sin claves de otros,
+        // FALLBACK_ORDER llega a ollama.
         assert.strictEqual(mod.getProviderName(), 'ollama');
     } finally { restore(); limpiarEnv(); }
 });
