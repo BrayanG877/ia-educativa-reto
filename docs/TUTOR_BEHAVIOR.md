@@ -104,23 +104,75 @@ de ~700–1500 caracteres.
 3. **Mensaje de error accionable** en vez de «La respuesta está tardando más de
    lo esperado. Intenta con una pregunta más corta».
 
-## 5. Streaming: disponible pero no activado
+## 5. Streaming (implementado)
 
-Verificado: el gateway **sí soporta SSE**. Medición:
+### Por qué
+La medición anterior mostró **TTFT ≈ 9,5 s y total ≈ 10,1 s**: el gateway tarda
+en *empezar* a generar. Sin streaming el estudiante espera el total completo;
+con streaming empieza a leer en el primer fragmento.
 
-| Modo | TTFT | Total |
+### Protocolo real de RETO (verificado)
+
+`backend/scripts/audit-stream.js` confirmó que el gateway emite SSE compatible
+OpenAI, pero con un detalle **crítico**:
+
+```
+delta.reasoning_content  →  razonamiento interno del modelo  (NO mostrar)
+delta.content            →  texto destinado al estudiante    (mostrar)
+```
+
+`ai.providers.consumirSSE()` **descarta por completo** `reasoning_content`.
+El estudiante nunca ve el monólogo interno.
+
+El `usage` llega en el último fragmento (con `stream_options.include_usage`).
+
+### Capas
+| Capa | Archivo | Cambio |
 |---|---|---|
-| Sin streaming | — | ~10 600 ms |
-| Streaming SSE | ~9 500 ms | ~10 100 ms |
+| Proveedor | `ai.providers.js` | `retoCompletionStream`, `consumirSSE`, filtro de razonamiento, cancelación |
+| Servicio | `ai.service.js` | `generateResponseStream` reutiliza el mismo contexto (materia inferida, instrucción de turno, agente) |
+| Controlador | `chat.controller.js` | `streamMessage` con eventos `meta`/`delta`/`done`/`error` |
+| Ruta | `chat.routes.js` | `POST /api/chat/stream` (JWT + rate limit) |
+| Frontend | `api-client.js`, `app.js` | `streamMessage()`, render progresivo con rAF |
 
-**TTFT ≈ total** significa que el servidor tarda en *empezar* a generar, no en
-producir el texto. El streaming reduciría la espera *percibida* (~40 % en colas
-largas) pero **no** el tiempo total.
+### Garantías
+- **Texto visible solo**: `reasoning_content` filtrado en el proveedor.
+- **Markdown seguro durante el flujo**: cada reintegro pasa por
+  `Markdown.safeRender` (escapa antes de interpretar, lista blanca de etiquetas).
+- **Un único evento de aprendizaje**, y solo si el turno termina bien. Un
+  fallo, timeout o cancelación **no** dejan eventos parciales.
+- **Sin reintentos tras haber emitido texto**: evita respuestas y eventos
+  duplicados. Si falla *antes* del primer fragmento, el frontend reintenta una
+  vez por el endpoint clásico.
+- **Cancelación**: si el cliente cierra, se aborta la llamada al proveedor
+  (no se sigue consumiendo cuota) y no se persiste nada.
+- **Aislamiento**: mismas comprobaciones de propiedad de conversación que el
+  flujo normal.
+- **Nginx**: `X-Accel-Buffering: no` evita que el proxy acumule el flujo.
 
-No se activó porque exige cambios en tres capas (proveedor → servicio →
-controlador → frontend), una prueba de que el `usage` se conserva para el
-registro de costes, y validación de que la instrumentación de aprendizaje no se
-duplica al recibir fragmentos. Es el siguiente paso con mayor impacto real.
+### Métricas medidas (real, N=1 por pregunta)
+
+Contra RETO/grok-4.6. `bench-stream.js`.
+
+| Pregunta | Sin stream (total) | TTFT con stream | Total con stream | Ahorro percibido |
+|---|---|---|
+| Historia | 14 608 ms | 14 485 ms | 21 846 ms | **123 ms** |
+| Matemáticas | 14 684 ms | 5 047 ms | 7 902 ms | **9 637 ms** |
+| Física | 14 031 ms | 17 197 ms | 23 045 ms | **−3 166 ms** |
+
+**Conclusión honesta:** el resultado **no es concluyente**. En Matemáticas el
+ahorro es de casi 10 s; en Historia es nulo; en Física fue negativo (el primer
+fragmento llegó *después* que la respuesta completa de la otra petición).
+
+**N=1 es insuficiente.** La varianza del proveedor (±7 s entre llamadas
+idénticas) domina. **No se puede afirmar una mejora porcentual.**
+
+Lo que sí es estructuralmente cierto: con streaming el estudiante ve el primer
+texto en TTFT en lugar de esperar el total. Cuando el proveedor empieza a
+generar rápido (caso Matemáticas), la mejora es real y grande; cuando tarda en
+arrancar, el streaming no puede adelantar lo que el modelo aún no ha producido.
+
+**Repetir con N≥10** antes de presentar cifras como definitivas.
 
 ## 6. Pruebas
 

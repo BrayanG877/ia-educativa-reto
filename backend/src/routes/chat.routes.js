@@ -39,6 +39,16 @@ router.use(optionalAuth, (req, res, next) => {
 router.post('/message', authenticateToken, chatController.sendMessage);
 
 /**
+ * POST /api/chat/stream
+ * Igual que /message, pero devuelve la respuesta en streaming (SSE).
+ * Body: { message, subject?, mode, conversationId? }
+ *
+ * La respuesta NO es JSON: es text/event-stream con eventos
+ * meta / delta / done / error.
+ */
+router.post('/stream', authenticateToken, chatController.streamMessage);
+
+/**
  * GET /api/chat/history/:conversationId
  * Obtener historial de una conversación
  */

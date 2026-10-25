@@ -402,7 +402,55 @@ async function handleSendMessage() {
 
             // Se pasa AppState.conversationId para que el backend continúe la MISMA
             // conversación y la IA reciba el historial (contexto).
-            response = await aiClient.sendMessage(messageText, subject, mode, AppState.conversationId);
+            //
+            // STREAMING: se pide la respuesta en flujo.
+            //  - El primer fragmento se pinta en cuanto llega (menos espera
+            //    percibida) sin cambiar el modelo ni el contexto.
+            //  - Si el servidor no admite streaming (501) o el flujo falla ANTES de
+            //    recibir texto, se reintenta UNA vez por el endpoint clásico.
+            //    Si ya había texto, NO se reintenta: evita respuestas duplicadas
+            //    y eventos de aprendizaje dobles.
+            const stream = empezarMensajeStreaming();
+            let recibidos = 0;
+
+            const resultado = await aiClient.streamMessage({
+                message: messageText,
+                subject,
+                mode,
+                conversationId: AppState.conversationId,
+                onDelta: (trozo) => {
+                    if (recibidos === 0) hideTypingIndicator();
+                    recibidos += trozo.length;
+                    stream.agregar(trozo);
+                }
+            });
+
+            if (resultado.success) {
+                stream.finalizar(resultado.text);
+                AppState.conversationId = resultado.conversationId || AppState.conversationId;
+                const aiMessage = {
+                    id: Date.now(),
+                    text: resultado.text,
+                    subject: AppState.selectedSubject,
+                    tool: AppState.selectedTool,
+                    timestamp: new Date().toISOString(),
+                    sender: 'assistant',
+                    model: resultado.model,
+                    usage: resultado.usage,
+                    /* el mensaje ya está pintado por el streaming */
+                    yaMostrado: true
+                };
+                AppState.messages.push(aiMessage);
+                response = { success: true, response: resultado.text, conversationId: resultado.conversationId };
+            } else if (recibidos === 0) {
+                // Sin texto recibido: es seguro reintentar por el flujo clásico.
+                stream.eliminar();
+                response = await aiClient.sendMessage(messageText, subject, mode, AppState.conversationId);
+            } else {
+                // Se recibió texto parcial: se conserva lo mostrado.
+                stream.finalizar(resultado.text || '');
+                response = { success: false, message: resultado.message };
+            }
         }
 
         // Ocultar indicador de escritura
@@ -428,7 +476,11 @@ async function handleSendMessage() {
             };
 
             AppState.messages.push(aiMessage);
-            displayMessage(aiMessage);
+            // Si el texto ya se pintó durante el streaming, NO se vuelve a
+            // insertar: duplicaría el mensaje en la conversación.
+            if (!aiMessage.yaMostrado) {
+                displayMessage(aiMessage);
+            }
 
             // Log para desarrollo (defensivo: las herramientas no devuelven usage/cost)
             console.log('✅ Respuesta de Claude:', {
@@ -594,6 +646,66 @@ function displayMessage(message) {
 
     // Scroll automático al último mensaje
     elements.messagesArea.scrollTop = elements.messagesArea.scrollHeight;
+}
+
+/**
+ * Crea el mensaje del tutor en el DOM y devuelve una función para ir
+ * actualizándolo con los fragmentos del streaming.
+ *
+ * SEGURIDAD: cada actualización pasa por Markdown.safeRender, que ESCAPA el
+ * HTML y solo genera etiquetas de lista blanca. Nunca se inserta texto crudo
+ * del modelo.
+ *
+ * MARKDOWN PARCIAL: durante la escritura una lista o un bloque de código
+ * pueden estar abiertos a medias. safeRender ya tolera ese caso (un ``` sin
+ * cerrar se muestra como texto, y al llegar el cierre pasa a bloque); el
+ * resultado no se rompe, solo mejora al completarse.
+ *
+ * RENDIMIENTO: se repinta como máximo cada 60 ms (rAF + umbral), no en cada
+ * fragmento: con 60-80 deltas por respuesta, repintar cada uno produce jank.
+ */
+function empezarMensajeStreaming() {
+    const el = document.createElement('div');
+    el.className = 'message assistant streaming';
+    el.setAttribute('aria-live', 'polite');
+    elements.messagesContainer.appendChild(el);
+
+    let pendiente = '';
+    let ultimoPin = 0;
+    let acumulado = '';
+
+    function pintar() {
+        ultimoPin = Date.now();
+        el.innerHTML = Markdown.safeRender(acumulado);
+        el.classList.add('is-streaming');
+        elements.messagesArea.scrollTop = elements.messagesArea.scrollHeight;
+    }
+
+    return {
+        agregar(trozo) {
+            acumulado += trozo;
+            pendiente += trozo;
+            const ahora = Date.now();
+            if (ahora - ultimoPin >= 60) {
+                pendiente = '';
+                pintar();
+            } else if (!el._raf) {
+                el._raf = true;
+                requestAnimationFrame(() => { el._raf = false; pintar(); });
+            }
+        },
+        finalizar(textoFinal) {
+            acumulado = typeof textoFinal === 'string' ? textoFinal : acumulado;
+            el.classList.remove('is-streaming');
+            el.innerHTML = Markdown.safeRender(acumulado);
+            elements.messagesArea.scrollTop = elements.messagesArea.scrollHeight;
+            return el;
+        },
+        eliminar() {
+            if (el.parentNode) el.parentNode.removeChild(el);
+        },
+        elemento: el
+    };
 }
 
 /**

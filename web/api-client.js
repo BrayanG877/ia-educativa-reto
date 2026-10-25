@@ -46,6 +46,7 @@ const API_CONFIG = {
         PROFILE: '/api/auth/me',
         SUBJECTS: '/api/chat/subjects',
         MESSAGE: '/api/chat/message',
+        STREAM: '/api/chat/stream',
         CONVERSATIONS: '/api/chat/conversations',
         NEW_CONVERSATION: '/api/chat/conversation/new',
         HISTORY: '/api/chat/history',
@@ -347,7 +348,110 @@ class AIClient {
         this.auth = authManager;
     }
 
-    async sendMessage(message, subject = 'matematicas', mode = 'socratic', conversationId = null) {
+    /**
+     * Envía un mensaje y recibe la respuesta en streaming (SSE).
+     *
+     * @returns {Promise<{success:boolean, text?:string, conversationId?:string,
+     *                    model?:string, usage?:object, message?:string}>}
+     */
+    async streamMessage({ message, subject = null, mode = 'socratic', conversationId = null,
+                          onDelta, onMeta, onDone, signal }) {
+        if (!this.auth.isAuthenticated()) {
+            return { success: false, message: 'No autenticado' };
+        }
+
+        const payload = { message, mode };
+        if (subject) payload.subject = subject;
+        if (conversationId) payload.conversationId = conversationId;
+
+        let response;
+        try {
+            response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.STREAM}`, {
+                method: 'POST',
+                headers: this.auth.getHeaders(),
+                body: JSON.stringify(payload),
+                signal
+            });
+        } catch (error) {
+            if (error && error.name === 'AbortError') {
+                return { success: false, cancelled: true, message: 'Cancelado' };
+            }
+            return { success: false, message: 'Error de conexión con el servidor' };
+        }
+
+        // El backend puede rechazar ANTES de abrir el flujo (401/400/404).
+        if (!response.ok) {
+            let mensaje = 'No se pudo iniciar la respuesta';
+            try {
+                const j = await response.json();
+                mensaje = j.message || mensaje;
+            } catch (_) { /* cuerpo no JSON */ }
+            return { success: false, status: response.status, message: mensaje };
+        }
+
+        const reader = response.body.getReader();
+        const dec = new TextDecoder();
+        let buffer = '';
+        let texto = '';
+        const meta = {};
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += dec.decode(value, { stream: true });
+
+                // SSE: eventos separados por línea en blanco.
+                const eventos = buffer.split('\n\n');
+                buffer = eventos.pop() || '';
+
+                for (const bloque of eventos) {
+                    let nombre = 'message';
+                    let datos = '';
+                    for (const linea of bloque.split('\n')) {
+                        if (linea.startsWith('event:')) nombre = linea.slice(6).trim();
+                        else if (linea.startsWith('data:')) datos += linea.slice(5).trim();
+                    }
+                    if (!datos) continue;
+
+                    let j;
+                    try { j = JSON.parse(datos); } catch (_) { continue; }
+
+                    if (nombre === 'delta' && typeof j.text === 'string') {
+                        texto += j.text;
+                        if (typeof onDelta === 'function') onDelta(j.text);
+                    } else if (nombre === 'meta') {
+                        Object.assign(meta, j);
+                        if (typeof onMeta === 'function') onMeta(j);
+                    } else if (nombre === 'done') {
+                        Object.assign(meta, j);
+                        if (typeof onDone === 'function') onDone(j);
+                    } else if (nombre === 'error') {
+                        return { success: false, message: j.message || 'Error del tutor' };
+                    }
+                }
+            }
+        } catch (error) {
+            if (error && error.name === 'AbortError') {
+                return { success: false, cancelled: true, text: texto, message: 'Cancelado' };
+            }
+            return { success: false, text: texto, message: 'Se interrumpió la conexión' };
+        }
+
+        if (!texto) {
+            return { success: false, message: 'El tutor no devolvió contenido. Intenta de nuevo.' };
+        }
+
+        return {
+            success: true,
+            text: texto,
+            conversationId: meta.conversationId || conversationId,
+            model: meta.model,
+            usage: meta.usage
+        };
+    }
+
+    async sendMessage(message, subject = null, mode = 'socratic', conversationId = null) {
         if (!this.auth.isAuthenticated()) {
             throw new Error('No autenticado');
         }

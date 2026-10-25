@@ -1514,3 +1514,33 @@ button:focus-visible {
         }
     }
 }
+
+/* ==================================================================
+   STREAMING — indicador de escritura progresiva
+   Un cursor parpadeante al final del último párrafo mientras llegan
+   fragmentos. Desaparece al terminar (.is-streaming se retira).
+   ================================================================== */
+.message.assistant.is-streaming > :last-child::after {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 1.05em;
+    margin-left: 3px;
+    vertical-align: text-bottom;
+    border-radius: 2px;
+    background: var(--primary);
+    animation: cursorParpadeo 1s steps(2, start) infinite;
+}
+
+@keyframes cursorParpadeo {
+    0%, 50% { opacity: 1; }
+    50.01%, 100% { opacity: 0.15; }
+}
+
+/* Sin movimiento si el usuario lo prefiere: el cursor queda estático */
+@media (prefers-reduced-motion: reduce) {
+    .message.assistant.is-streaming > :last-child::after {
+        animation: none;
+        opacity: 0.5;
+    }
+}
