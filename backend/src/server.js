@@ -26,6 +26,24 @@ const teacherRoutes = require('./routes/teacher.routes');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// ------------------------------------------------------------------
+// TRUST PROXY (corrección del 429 en /api/auth/login)
+// ------------------------------------------------------------------
+// En producción el backend no recibe conexiones directas: Nginx reenvía
+// todo desde 127.0.0.1 y añade X-Forwarded-For / X-Real-IP.
+//
+// Sin esta línea, `req.ip` es SIEMPRE 127.0.0.1, así que el limitador de
+// autenticación (5 intentos / 15 min contaba TODOS los inicios de sesión de
+// TODOS los estudiantes en un único cubo compartido. Tras 5 logins en el
+// colegio, todo el mundo recibía 429 «Demasiados intentos».
+//
+// Con `1` se confía en el PRIMER proxy (Nginx local). NO se usa `true`, que
+// confiaría en cualquier X-Forwarded-For y permitiría a un cliente falsificar
+// su IP y eludir el límite.
+//
+// Configurable con TRUST_PROXY por si cambia la topología de despliegue.
+app.set('trust proxy', parseInt(process.env.TRUST_PROXY || '1', 10));
+
 // Estado real de las dependencias, reportado por /health.
 // Permite distinguir "backend caído" de "backend arriba pero BD caída".
 const aiProviders = require('./services/ai.providers');
