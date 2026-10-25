@@ -443,9 +443,15 @@ async function handleSendMessage() {
                 AppState.messages.push(aiMessage);
                 response = { success: true, response: resultado.text, conversationId: resultado.conversationId };
             } else if (recibidos === 0) {
-                // Sin texto recibido: es seguro reintentar por el flujo clásico.
+                // Sin texto recibido: es seguro reintentar por el flujo clásico,
+                // SALVO que el fallo sea de autenticación: reintentar con un
+                // token inválido solo produce un segundo 401 y oculta el motivo.
                 stream.eliminar();
-                response = await aiClient.sendMessage(messageText, subject, mode, AppState.conversationId);
+                if (resultado.status === 401) {
+                    response = { success: false, status: 401, message: resultado.message };
+                } else {
+                    response = await aiClient.sendMessage(messageText, subject, mode, AppState.conversationId);
+                }
             } else {
                 // Se recibió texto parcial: se conserva lo mostrado.
                 stream.finalizar(resultado.text || '');
