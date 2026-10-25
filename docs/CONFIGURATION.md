@@ -137,6 +137,12 @@ Ollama permanece deshabilitado salvo que `OLLAMA_ENABLED` sea exactamente
 |---|---|---|
 | `AGENT_ENABLED` | `false` | Enriquecimiento del prompt con el plan pedagógico. |
 | `AGENT_PERSISTENCE_ENABLED` | `false` | Escritura de evidencias en SQL Server. |
+| `TEACHER_SELF_REGISTRATION` | `false` | Permite el auto-registro de profesores. **Debe permanecer `false` en producción**: el rol docente se otorga por aprovisionamiento. |
+
+> La analítica del panel docente (`learning_events`) **no** depende de
+> `AGENT_ENABLED`: se registra siempre que la migración
+> `migration_teacher_panel.sql` esté aplicada, sin alterar el prompt que recibe
+> el estudiante.
 
 Ambas exigen un valor afirmativo explícito: `true`, `1`, `yes`, `on`, `si`, `sí`.
 Cualquier otro valor (incluido ausente) equivale a `false`.

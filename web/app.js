@@ -107,7 +107,17 @@ function selectSubject(subject, displayName) {
     // Actualizar indicador visual
     elements.indicatorText.textContent = `Modo: ${displayName}`;
     elements.subjectIndicator.classList.remove('hidden');
-        updateModeIndicator();
+    updateModeIndicator();
+
+    // Estado accesible de las tarjetas de materias: aria-pressed refleja la
+    // selección real para lectores de pantalla (y activa el estilo de la
+    // materia elegida). NO se oculta ninguna opción.
+    document.querySelectorAll('.subject-item').forEach(item => {
+        const btn = item.querySelector('.subject-button');
+        if (!btn) return;
+        const esActiva = item.dataset.subject === subject;
+        btn.setAttribute('aria-pressed', esActiva ? 'true' : 'false');
+    });
 
     // Cerrar menú
     closeOptionsMenu();
@@ -240,7 +250,9 @@ async function processToolRequest(toolId, message, subject) {
         throw new Error('Cliente de herramientas no disponible');
     }
 
-    const subjectCode = subject || 'matematicas';
+    // Igual que en el chat: las herramientas de evaluación también deben
+    // respetar la materia real. Sin selección explícita no se impone una.
+    const subjectCode = subject || 'general';
 
     switch(toolId) {
         case 'test-prep':
@@ -338,6 +350,8 @@ async function handleSendMessage() {
         // Deshabilitar input y botón durante envío
         elements.messageInput.disabled = true;
         elements.micButton.disabled = true;
+        // Estado visual del compositor mientras el tutor responde
+        document.querySelector('.prompt-box')?.classList.add('is-sending');
 
         // Mostrar indicador de escritura
         showTypingIndicator();
@@ -353,8 +367,9 @@ async function handleSendMessage() {
         let mode = 'socratic';
 
         if (AppState.selectedTool && toolsWithSpecialProcessing.includes(AppState.selectedTool.id)) {
-            // Procesar con herramienta específica
-            const subject = AppState.selectedSubject?.id || 'matematicas';
+            // Procesar con herramienta específica.
+            // Se respeta la materia elegida; si no hay, NO se impone una.
+            const subject = AppState.selectedSubject?.id || null;
             response = await processToolRequest(AppState.selectedTool.id, messageText, subject);
 
             // Convertir respuesta de herramienta al formato estándar
@@ -363,8 +378,17 @@ async function handleSendMessage() {
                 response.conversationId = AppState.conversationId;
             }
         } else {
-            // Enviar mensaje normal al backend
-            const subject = AppState.selectedSubject?.id || 'matematicas';
+            // Enviar mensaje normal al backend.
+            //
+            // CORRECCIÓN DEL FALLO P0 «¿Quién fue Cristóbal Colón?»:
+            // antes se enviaba `|| 'matematicas'`, de modo que CUALQUIER pregunta
+            // sin materia elegida llegaba al modelo como si fuera de Matemáticas
+            // y el tutor respondía con preguntas de operaciones básicas.
+            //
+            // Ahora, sin selección explícita, se envía `null`: el backend infiere
+            // la materia del propio mensaje (intent.service) y el tutor responde
+            // en la materia que el estudiante preguntó.
+            const subject = AppState.selectedSubject?.id || null;
 
             // MODO SOCRÁTICO POR DEFECTO (obligatorio)
             // Las herramientas pueden cambiar el modo
@@ -378,7 +402,61 @@ async function handleSendMessage() {
 
             // Se pasa AppState.conversationId para que el backend continúe la MISMA
             // conversación y la IA reciba el historial (contexto).
-            response = await aiClient.sendMessage(messageText, subject, mode, AppState.conversationId);
+            //
+            // STREAMING: se pide la respuesta en flujo.
+            //  - El primer fragmento se pinta en cuanto llega (menos espera
+            //    percibida) sin cambiar el modelo ni el contexto.
+            //  - Si el servidor no admite streaming (501) o el flujo falla ANTES de
+            //    recibir texto, se reintenta UNA vez por el endpoint clásico.
+            //    Si ya había texto, NO se reintenta: evita respuestas duplicadas
+            //    y eventos de aprendizaje dobles.
+            const stream = empezarMensajeStreaming();
+            let recibidos = 0;
+
+            const resultado = await aiClient.streamMessage({
+                message: messageText,
+                subject,
+                mode,
+                conversationId: AppState.conversationId,
+                onDelta: (trozo) => {
+                    if (recibidos === 0) hideTypingIndicator();
+                    recibidos += trozo.length;
+                    stream.agregar(trozo);
+                }
+            });
+
+            if (resultado.success) {
+                stream.finalizar(resultado.text);
+                AppState.conversationId = resultado.conversationId || AppState.conversationId;
+                const aiMessage = {
+                    id: Date.now(),
+                    text: resultado.text,
+                    subject: AppState.selectedSubject,
+                    tool: AppState.selectedTool,
+                    timestamp: new Date().toISOString(),
+                    sender: 'assistant',
+                    model: resultado.model,
+                    usage: resultado.usage,
+                    /* el mensaje ya está pintado por el streaming */
+                    yaMostrado: true
+                };
+                AppState.messages.push(aiMessage);
+                response = { success: true, response: resultado.text, conversationId: resultado.conversationId };
+            } else if (recibidos === 0) {
+                // Sin texto recibido: es seguro reintentar por el flujo clásico,
+                // SALVO que el fallo sea de autenticación: reintentar con un
+                // token inválido solo produce un segundo 401 y oculta el motivo.
+                stream.eliminar();
+                if (resultado.status === 401) {
+                    response = { success: false, status: 401, message: resultado.message };
+                } else {
+                    response = await aiClient.sendMessage(messageText, subject, mode, AppState.conversationId);
+                }
+            } else {
+                // Se recibió texto parcial: se conserva lo mostrado.
+                stream.finalizar(resultado.text || '');
+                response = { success: false, message: resultado.message };
+            }
         }
 
         // Ocultar indicador de escritura
@@ -404,7 +482,11 @@ async function handleSendMessage() {
             };
 
             AppState.messages.push(aiMessage);
-            displayMessage(aiMessage);
+            // Si el texto ya se pintó durante el streaming, NO se vuelve a
+            // insertar: duplicaría el mensaje en la conversación.
+            if (!aiMessage.yaMostrado) {
+                displayMessage(aiMessage);
+            }
 
             // Log para desarrollo (defensivo: las herramientas no devuelven usage/cost)
             console.log('✅ Respuesta de Claude:', {
@@ -447,6 +529,8 @@ async function handleSendMessage() {
         // Rehabilitar input y botón
         elements.messageInput.disabled = false;
         elements.micButton.disabled = false;
+        document.querySelector('.prompt-box')?.classList.remove('is-sending');
+        autoAjustarEntrada();
         elements.messageInput.focus();
 
         // Marcar como no enviando
@@ -543,39 +627,131 @@ function escapeHtml(text) {
 
 function displayMessage(message) {
     const messageElement = document.createElement('div');
+    const esAsistente = message.sender === 'assistant';
     messageElement.className = `message ${message.sender}`;
 
-    // Escapar HTML ANTES de aplicar el markdown. Sin esto, el texto entraba
-    // directo a innerHTML y un mensaje como <img src=x onerror=...> se
-    // ejecutaba en el navegador del estudiante.
-    let htmlContent = escapeHtml(message.text);
-
-    // Headers
-    htmlContent = htmlContent.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-    htmlContent = htmlContent.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-    htmlContent = htmlContent.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-
-    // Bold
-    htmlContent = htmlContent.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-    // Code blocks
-    htmlContent = htmlContent.replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>');
-
-    // Inline code
-    htmlContent = htmlContent.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-    // Line breaks
-    htmlContent = htmlContent.replace(/\n/g, '<br>');
-
-    // Tables (básico)
-    htmlContent = htmlContent.replace(/\|(.+)\|/g, '<div class="table-row">$1</div>');
-
-    messageElement.innerHTML = htmlContent;
+    // El mensaje del estudiante es texto plano; el del tutor es Markdown.
+    // En AMBOS casos el render escapa el HTML antes de interpretar nada:
+    // `Markdown.safeRender` escapa primero y solo genera elementos de una
+    // lista blanca (h1-h4, p, ul, ol, li, strong, em, code, pre, table...).
+    // Un <img src=x onerror=...> o un enlace javascript: quedan inertes.
+    //
+    // Antes esta función aplicaba <br> a cada salto ANTES de procesar listas,
+    // lo que deformaba el Markdown real del modelo (listas sin viñeta,
+    // tablas falsas generadas por cualquier línea con barras).
+    if (typeof Markdown !== 'undefined' && Markdown.safeRender) {
+        messageElement.innerHTML = esAsistente
+            ? Markdown.safeRender(message.text)
+            : Markdown.plainRender(message.text);
+    } else {
+        // Fallback defensivo si markdown.js no cargó: texto plano escapado.
+        messageElement.textContent = String(message.text ?? '');
+    }
 
     elements.messagesContainer.appendChild(messageElement);
 
     // Scroll automático al último mensaje
     elements.messagesArea.scrollTop = elements.messagesArea.scrollHeight;
+}
+
+/**
+ * Crea el mensaje del tutor en el DOM y devuelve una función para ir
+ * actualizándolo con los fragmentos del streaming.
+ *
+ * SEGURIDAD: cada actualización pasa por Markdown.safeRender, que ESCAPA el
+ * HTML y solo genera etiquetas de lista blanca. Nunca se inserta texto crudo
+ * del modelo.
+ *
+ * MARKDOWN PARCIAL: durante la escritura una lista o un bloque de código
+ * pueden estar abiertos a medias. safeRender ya tolera ese caso (un ``` sin
+ * cerrar se muestra como texto, y al llegar el cierre pasa a bloque); el
+ * resultado no se rompe, solo mejora al completarse.
+ *
+ * RENDIMIENTO: se repinta como máximo cada 60 ms (rAF + umbral), no en cada
+ * fragmento: con 60-80 deltas por respuesta, repintar cada uno produce jank.
+ */
+function empezarMensajeStreaming() {
+    const el = document.createElement('div');
+    el.className = 'message assistant streaming';
+    el.setAttribute('aria-live', 'polite');
+    elements.messagesContainer.appendChild(el);
+
+    let pendiente = '';
+    let ultimoPin = 0;
+    let acumulado = '';
+
+    function pintar() {
+        ultimoPin = Date.now();
+        el.innerHTML = Markdown.safeRender(acumulado);
+        el.classList.add('is-streaming');
+        elements.messagesArea.scrollTop = elements.messagesArea.scrollHeight;
+    }
+
+    return {
+        agregar(trozo) {
+            acumulado += trozo;
+            pendiente += trozo;
+            const ahora = Date.now();
+            if (ahora - ultimoPin >= 60) {
+                pendiente = '';
+                pintar();
+            } else if (!el._raf) {
+                el._raf = true;
+                requestAnimationFrame(() => { el._raf = false; pintar(); });
+            }
+        },
+        finalizar(textoFinal) {
+            acumulado = typeof textoFinal === 'string' ? textoFinal : acumulado;
+            el.classList.remove('is-streaming');
+            el.innerHTML = Markdown.safeRender(acumulado);
+            elements.messagesArea.scrollTop = elements.messagesArea.scrollHeight;
+            return el;
+        },
+        eliminar() {
+            if (el.parentNode) el.parentNode.removeChild(el);
+        },
+        elemento: el
+    };
+}
+
+/**
+ * Copiar código de las respuestas del tutor.
+ * Delegación en el contenedor: un solo listener sirve para todos los bloques,
+ * incluidos los que se añadan después.
+ */
+function manejarCopiaCodigo(event) {
+    const boton = event.target.closest('[data-copy]');
+    if (!boton) return;
+
+    const envoltorio = boton.closest('.md-code-wrap');
+    const codigo = envoltorio && envoltorio.querySelector('code');
+    if (!codigo) return;
+
+    const texto = codigo.textContent;
+    const confirmar = () => {
+        const original = boton.textContent;
+        boton.textContent = 'Copiado';
+        boton.classList.add('copiado');
+        setTimeout(() => {
+            boton.textContent = original;
+            boton.classList.remove('copiado');
+        }, 1600);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(confirmar).catch(() => { });
+    } else {
+        // Fallback para contextos sin Clipboard API (http no seguro)
+        const area = document.createElement('textarea');
+        area.value = texto;
+        area.setAttribute('readonly', '');
+        area.style.position = 'absolute';
+        area.style.left = '-9999px';
+        document.body.appendChild(area);
+        area.select();
+        try { document.execCommand('copy'); confirmar(); } catch (_) { /* sin permiso */ }
+        document.body.removeChild(area);
+    }
 }
 
 /**
@@ -585,7 +761,10 @@ function showTypingIndicator() {
     const typingDiv = document.createElement('div');
     typingDiv.className = 'message assistant typing';
     typingDiv.id = 'typingIndicator';
-    typingDiv.innerHTML = '<span>Claude está escribiendo</span> <span class="dots">...</span>';
+    typingDiv.setAttribute('role', 'status');
+    typingDiv.setAttribute('aria-live', 'polite');
+    typingDiv.innerHTML = '<span class="typing-label">El tutor está pensando</span>' +
+        '<span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>';
     elements.messagesContainer.appendChild(typingDiv);
     elements.messagesArea.scrollTop = elements.messagesArea.scrollHeight;
 }
@@ -639,10 +818,26 @@ function simulateAIResponse(userMessage) {
  * Maneja el evento de tecla presionada en el input
  */
 function handleKeyPress(event) {
+    // Enter envía; Shift+Enter inserta una nueva línea.
+    // `keydown` (no `keypress`) es el evento fiable para Enter dentro de un
+    // <textarea>: `keypress` no se dispara en todos los IME/navegadores tras
+    // Shift+Enter, y el campo quedaba sin poder enviar.
     if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
         handleSendMessage();
     }
+}
+
+/**
+ * Ajusta la altura del campo de escritura al contenido (1–5 líneas),
+ * sin ocultar nunca el texto.
+ */
+function autoAjustarEntrada() {
+    const el = elements.messageInput;
+    if (!el || el.tagName !== 'TEXTAREA') return;
+    el.style.height = 'auto';
+    const max = 5 * 24 + 24; // ~5 líneas + padding
+    el.style.height = Math.min(el.scrollHeight, max) + 'px';
 }
 
 // ===================================
@@ -710,7 +905,9 @@ function initializeEventListeners() {
     });
 
     // Input de mensaje
-    elements.messageInput.addEventListener('keypress', handleKeyPress);
+    elements.messageInput.addEventListener('keydown', handleKeyPress);
+    elements.messageInput.addEventListener('input', autoAjustarEntrada);
+    elements.messagesContainer.addEventListener('click', manejarCopiaCodigo);
 
     // Botón de limpiar materia
     elements.clearSubject.addEventListener('click', clearSubjectSelection);
@@ -720,7 +917,10 @@ function initializeEventListeners() {
         button.addEventListener('click', (event) => {
             const subjectItem = event.target.closest('.subject-item');
             const subjectId = subjectItem.dataset.subject;
-            const subjectName = button.textContent.trim();
+            // El botón contiene emoji + nombre: se toma solo el texto del nombre
+            // para no mostrar el emoji en el indicador de modo.
+            const nombreVisible = button.querySelector('.subject-name');
+            const subjectName = (nombreVisible ? nombreVisible.textContent : button.textContent).trim();
 
             selectSubject(subjectId, subjectName);
         });

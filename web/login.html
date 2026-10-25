@@ -243,8 +243,13 @@
 
             if (result.success) {
                 showSuccess('¡Login exitoso! Redirigiendo...');
+                // El rol decide el destino. Se lee del login (que lo toma de la
+                // BD) y, si no viniera, del perfil del usuario.
+                const rol = (result.user && result.user.role) ||
+                            (authManager.getUser && authManager.getUser() && authManager.getUser().role);
+                const destino = rol === 'teacher' ? 'teacher.html' : 'index.html';
                 setTimeout(() => {
-                    window.location.href = 'index.html';
+                    window.location.href = destino;
                 }, 1000);
             } else {
                 showError(result.message || 'Error al iniciar sesión');
@@ -263,7 +268,8 @@
 
         // Verificar si ya está autenticado
         if (authManager.isAuthenticated()) {
-            window.location.href = 'index.html';
+            const rolGuardado = authManager.getUser && authManager.getUser() && authManager.getUser().role;
+            window.location.href = rolGuardado === 'teacher' ? 'teacher.html' : 'index.html';
         }
     </script>
 </body>

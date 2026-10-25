@@ -15,6 +15,7 @@ const aiProviders = require('./ai.providers');
 const { listProviders } = aiProviders;
 const cacheService = require('./cache.service');
 const promptService = require('./prompt.service');
+const intentService = require('./intent.service');
 const tutorIntegration = require('./tutor.integration');
 const { AppError } = require('../middleware/error.middleware');
 const crypto = require('crypto');
@@ -174,7 +175,12 @@ function toAppError(error, providerName) {
     }
 
     if (s === 408 || s === 504 || error?.name === 'AbortError') {
-        return new AppError('La respuesta está tardando más de lo esperado. Intenta con una pregunta más corta.', 504);
+        return new AppError(
+            'El tutor tardó más de lo esperado en responder. Tu pregunta no se perdió: ' +
+            'vuelve a enviarla o prueba a pedir algo más concreto. ' +
+            '(Si se repite, el modelo está saturado; intenta en unos minutos.)',
+            504
+        );
     }
 
     if (s === 502) {
@@ -271,8 +277,20 @@ async function generateWithProvider({ provider, providerName, message, subject, 
             };
         }
 
-        // Preparar system prompt según modo y materia
-        const baseSystemPrompt = promptService.getSystemPrompt(mode, subject);
+        // Preparar system prompt según modo y materia.
+        //
+        // CONTEXTO DEL TURNO (corrección del fallo «Cristóbal Colón»):
+        //   - Si el cliente no envía materia (o envía una que no corresponde
+        //     al mensaje), se infiere la materia del propio texto.
+        //   - Se añade al MISMO system prompt una instrucción breve que fija
+        //     qué se preguntó y qué se debe hacer en este turno.
+        //   La inferencia es puramente léxica (intent.service): no añade una
+        //     llamada al modelo, así que no cuesta latencia.
+        const deteccion = intentService.detectarMateria(message, subject);
+        const materiaEfectiva = deteccion.materia || subject;
+        const intencion = intentService.detectarIntencion(message);
+
+        const baseSystemPrompt = promptService.getSystemPrompt(mode, materiaEfectiva);
 
         // Agente tutor: si está habilitado (AGENT_ENABLED=true), se AÑADE el
         // contexto pedagógico del turno AL MISMO system prompt (no se crea un
@@ -280,11 +298,19 @@ async function generateWithProvider({ provider, providerName, message, subject, 
         // agente está desactivado o falla, el contexto es '' y el prompt queda
         // idéntico al anterior (fallback seguro).
         const contextoPedagogico = tutorIntegration.construirContextoPedagogico({
-            message, subject, mode, history
+            message, subject: materiaEfectiva, mode, history
         });
-        const systemPrompt = contextoPedagogico
-            ? `${baseSystemPrompt}\n\n${contextoPedagogico}`
-            : baseSystemPrompt;
+
+        // Instrucción de turno: qué se preguntó exactamente y cómo responderlo.
+        const instruccionTurno = intentService.construirInstruccionDeTurno({
+            mensaje: message,
+            materia: materiaEfectiva,
+            intencion,
+            historial: history
+        });
+        const systemPrompt = [baseSystemPrompt, contextoPedagogico, instruccionTurno]
+            .filter(Boolean)
+            .join('\n\n');
 
         // Preparar historial de mensajes (limitar para optimizar costos)
         const messages = prepareMessages(history, message);
@@ -550,9 +576,139 @@ async function generateICFESQuestion({ subject, topic, difficulty = 'medium', us
     }
 }
 
+/**
+ * GENERACIÓN CON STREAMING
+ * ==================================================================
+ * Reutiliza EXACTAMENTE la misma construcción de contexto que
+ * generateResponse (materia inferida, instrucción de turno, agente tutor,
+ * caché). La única diferencia es que el texto llega trozo a trozo.
+ *
+ * GARANTÍAS
+ *  - `onDelta(texto)` recibe SOLO contenido visible: el razonamiento interno
+ *    del modelo (`reasoning_content`) se descarta en el proveedor.
+ *  - El texto concatenado es idéntico al que devolvería generateResponse.
+ *  - El `usage` se conserva si el proveedor lo entrega.
+ *  - Si el cliente cancela (signal abortado), se propaga una cancelación
+ *    controlada para que el llamador NO registre el turno como completado.
+ */
+async function generateResponseStream({ message, subject, history = [], mode = 'socratic', userId, signal, onDelta }) {
+    const empezar = Date.now();
+
+    // La validación de longitud la aplica Joi en el controlador (máx. 2000).
+    // Aquí solo se rechaza una entrada vacía para no enviar basura al modelo.
+    if (!message || typeof message !== 'string' || message.trim() === '') {
+        throw new AppError('El mensaje no puede estar vacío', 400);
+    }
+
+    const educativa = isEducationalContent(message);
+    if (!educativa) {
+        const e = new AppError('Solo puedo ayudar con contenido educativo. ¿Sobre qué tema quieres aprender?', 400);
+        e.motivoModeracion = true;
+        throw e;
+    }
+
+    const deteccion = intentService.detectarMateria(message, subject);
+    const materiaEfectiva = deteccion.materia || subject;
+    const intencion = intentService.detectarIntencion(message);
+
+    const baseSystemPrompt = promptService.getSystemPrompt(mode, materiaEfectiva);
+    const contextoPedagogico = tutorIntegration.construirContextoPedagogico({
+        message, subject: materiaEfectiva, mode, history
+    });
+    const instruccionTurno = intentService.construirInstruccionDeTurno({
+        mensaje: message, materia: materiaEfectiva, intencion, historial: history
+    });
+    const systemPrompt = [baseSystemPrompt, contextoPedagogico, instruccionTurno]
+        .filter(Boolean)
+        .join('\n\n');
+
+    const messages = prepareMessages(history, message);
+
+    const providerName = aiProviders.getProviderName();
+    const provider = aiProviders.getProvider();
+
+    if (!provider || typeof provider.completionStream !== 'function') {
+        const e = new AppError(
+            `El proveedor de IA (${providerName}) no admite streaming en esta configuración.`,
+            501
+        );
+        e.streamingNoSoportado = true;
+        throw e;
+    }
+    if (typeof provider.configured === 'function' && !provider.configured()) {
+        const e = new AppError(
+            `El proveedor de IA (${providerName}) no tiene credenciales configuradas.`,
+            503
+        );
+        e.recoverable = false;
+        throw e;
+    }
+
+    const modelName = typeof provider.model === 'function' ? provider.model() : DEFAULT_CONFIG.model;
+    const maxTokens = (aiConfig && aiConfig.maxOutputTokens) || DEFAULT_CONFIG.max_tokens;
+    const temperature = (aiConfig && typeof aiConfig.temperature === 'number')
+        ? aiConfig.temperature
+        : DEFAULT_CONFIG.temperature;
+
+    let completion;
+    try {
+        completion = await provider.completionStream({
+            system: systemPrompt,
+            messages,
+            model: modelName,
+            maxTokens,
+            temperature,
+            signal,
+            onDelta
+        });
+    } catch (error) {
+        if (error && (error.cancelado || (signal && signal.aborted))) {
+            const e = new Error('Generación cancelada por el cliente');
+            e.cancelado = true;
+            throw e;
+        }
+        // Diagnóstico: el mensaje original del proveedor se conserva en el log
+        // (sin credenciales) para no perder la causa al mapear a AppError.
+        console.error('[STREAM] fallo del proveedor', {
+            proveedor: providerName,
+            status: error && error.status,
+            detalle: error && typeof error.message === 'string' ? error.message.slice(0, 160) : '',
+            codigo: error && error.number
+        });
+        throw toAppError(error, providerName);
+    }
+
+    const duration = Date.now() - empezar;
+    const inputTokens = completion.inputTokens || 0;
+    const outputTokens = completion.outputTokens || 0;
+    const totalTokens = completion.totalTokens || (inputTokens + outputTokens);
+    const contenido = completion.text || '';
+
+    // Mismo cálculo de coste que el flujo sin streaming (config/anthropic).
+    const coste = calculateCost(providerName, inputTokens, outputTokens);
+    const cost = coste || { inputCost: 0, outputCost: 0, totalCost: 0 };
+
+    return {
+        content: contenido,
+        model: modelName,
+        provider: providerName,
+        usage: { inputTokens, outputTokens, totalTokens },
+        cost,
+        duration,
+        fromCache: false,
+        fallback: null,
+        // El agente se calcula igual que en el flujo normal, para que la
+        // analítica del panel docente registre el mismo turno.
+        agentPlan: tutorIntegration.planInstrumentacion({ message, subject: materiaEfectiva, mode, history }),
+        materiaEfectiva,
+        intencion,
+        opciones: { subject: materiaEfectiva, mode, history, userId, message }
+    };
+}
+
 module.exports = {
     generateResponse,
-    generateICFESQuestion,
+    generateResponseStream,    generateICFESQuestion,
     isEducationalContent,
     prepareMessages,
     generateCacheKey,

@@ -81,6 +81,10 @@
         .message.show { display: block; }
         .message.error { background: #fee; color: #c33; }
         .message.success { background: #efe; color: #3c3; }
+        .message.info { background: #eef3ff; color: #34509c; }
+
+        .hidden { display: none !important; }
+        .form-group .required-mark { color: #c33; }
 
         .loading { text-align: center; color: #667eea; font-size: 14px; margin-top: 10px; }
 
@@ -103,6 +107,26 @@
             <div class="form-group">
                 <label for="fullName">Nombre completo</label>
                 <input type="text" id="fullName" name="fullName" required>
+            </div>
+
+            <div class="form-group">
+                <label for="role">Tipo de cuenta</label>
+                <select id="role" name="role">
+                    <option value="student" selected>Estudiante</option>
+                    <option value="teacher">Profesor</option>
+                </select>
+            </div>
+
+            <!-- Campo exclusivo del rol profesor. La lista de materias se carga
+                 de /api/auth/subjects: fuente única, NO duplicada aquí. -->
+            <div class="form-group hidden" id="subjectGroup">
+                <label for="subject">Asignatura que impartes <span class="required-mark">*</span></label>
+                <select id="subject" name="subject" aria-describedby="subjectHint">
+                    <option value="">Cargando asignaturas...</option>
+                </select>
+                <div class="hint" id="subjectHint">
+                    El acceso a los grupos se asigna posteriormente por la institución.
+                </div>
             </div>
 
             <div class="row">
@@ -170,6 +194,51 @@
             messageBox.className = 'message show ' + type;
         }
 
+        // ---------------------------------------------------------
+        // ROL Y ASIGNATURA (Fase 10)
+        // El formulario solo OCULTA los campos de estudiante al elegir
+        // "Profesor"; la autorización real la decide el backend.
+        // La lista de materias viene de /api/auth/subjects (fuente única).
+        // ---------------------------------------------------------
+        const roleSelect = document.getElementById('role');
+        const subjectGroup = document.getElementById('subjectGroup');
+        const subjectSelect = document.getElementById('subject');
+        const gradeGroup = document.getElementById('gradeLevel').closest('.form-group');
+        let subjectsLoaded = false;
+
+        async function loadSubjects() {
+            if (subjectsLoaded) return;
+            try {
+                const base = (window.API_BASE_URL || '').replace(/\/$/, '');
+                const res = await fetch(base + '/api/auth/subjects');
+                const payload = await res.json();
+                const lista = (payload && payload.data && payload.data.subjects) || [];
+                if (lista.length === 0) {
+                    subjectSelect.innerHTML = '<option value="">No hay asignaturas disponibles</option>';
+                    return;
+                }
+                subjectSelect.innerHTML = '<option value="">Selecciona una asignatura...</option>' +
+                    lista.map(s => '<option value="' + String(s.code).replace(/"/g, '&quot;') + '">' +
+                        (s.emoji ? s.emoji + ' : '') + String(s.name).replace(/</g, '&lt;') +
+                        '</option>').join('');
+                subjectsLoaded = true;
+            } catch (err) {
+                subjectSelect.innerHTML = '<option value="">No se pudieron cargar las asignaturas</option>';
+            }
+        }
+
+        function syncRoleFields() {
+            const esProfesor = roleSelect.value === 'teacher';
+            subjectGroup.classList.toggle('hidden', !esProfesor);
+            subjectSelect.required = esProfesor;
+            // El grado corresponde al estudiante; el profesor trabaja por grupos.
+            gradeGroup.classList.toggle('hidden', esProfesor);
+            if (esProfesor) loadSubjects();
+        }
+
+        roleSelect.addEventListener('change', syncRoleFields);
+        syncRoleFields();
+
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
@@ -180,6 +249,8 @@
             const gradeLevel = document.getElementById('gradeLevel').value;
             const password = document.getElementById('password').value;
             const passwordConfirm = document.getElementById('passwordConfirm').value;
+            const role = roleSelect.value;
+            const subject = subjectSelect.value;
 
             // Validación de cliente (el backend valida de nuevo; esto es sólo UX)
             if (password !== passwordConfirm) {
@@ -190,22 +261,33 @@
                 showMessage('La contraseña debe tener al menos 6 caracteres.', 'error');
                 return;
             }
+            if (role === 'teacher' && !subject) {
+                showMessage('Selecciona la asignatura que impartes.', 'error');
+                return;
+            }
 
             registerButton.disabled = true;
             registerButton.textContent = 'Creando...';
             loadingMessage.style.display = 'block';
 
-            const result = await authManager.register({
-                email, password, username, fullName, gradeLevel, institution
-            });
+            const payload = { email, password, username, fullName, gradeLevel, institution };
+            if (role === 'teacher') {
+                payload.role = 'teacher';
+                payload.subject = subject;
+            }
+
+            const result = await authManager.register(payload);
 
             registerButton.disabled = false;
             registerButton.textContent = 'Crear cuenta';
             loadingMessage.style.display = 'none';
 
             if (result.success) {
+                const destino = (result.data && result.data.role) === 'teacher'
+                    ? 'teacher.html'
+                    : 'index.html';
                 showMessage('¡Cuenta creada! Redirigiendo...', 'success');
-                setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+                setTimeout(() => { window.location.href = destino; }, 1200);
             } else {
                 showMessage(result.message || 'No se pudo crear la cuenta.', 'error');
             }

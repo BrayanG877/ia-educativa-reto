@@ -57,4 +57,15 @@ router.post('/forgot-password', authRateLimiter, authController.forgotPassword);
  */
 router.post('/reset-password', authController.resetPassword);
 
+/**
+ * GET /api/auth/subjects
+ * Catálogo público de asignaturas activas (código, nombre, emoji).
+ *
+ * FUENTE ÚNICA: el formulario de registro del profesor consume esta lista en
+ * lugar de duplicar las materias en HTML/JS. El backend vuelve a validar el
+ * código contra `subjects` al registrar, así que un cliente manipulado no
+ * puede introducir una asignatura inexistente.
+ */
+router.get('/subjects', authController.getSubjects);
+
 module.exports = router;

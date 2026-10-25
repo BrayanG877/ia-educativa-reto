@@ -77,6 +77,16 @@ async function postJson(url, body, headers, timeoutMs = DEFAULT_TIMEOUT_MS) {
         if (error.name === 'AbortError') {
             const e = new Error(`El proveedor tardó más de ${Math.round(timeoutMs / 1000)}s en responder`);
             e.status = 408;
+            // NO se reintenta con otro proveedor tras un timeout.
+            //
+            // Por qué: el proveedor seguía trabajando (grok-4.6 puede tardar
+            // 30-60 s). Abortar y repetir la misma petición en otro proveedor
+            // no la hace más rápida: el estudiante espera el timeout COMPLETO y
+            // además el doble (medido: una respuesta de ~54 s se convertía en
+            // >90 s con reintento). Y si el segundo también expira, devuelve
+            // error tras haber esperado dos veces.
+            // Es más honesto responder «tardó demasiado» rápido.
+            e.recoverable = false;
             throw e;
         }
         // Fallo de red (DNS, TLS, conexión rechazada): 503 para el mapeo de errores.
@@ -482,6 +492,10 @@ const PROVIDERS = {
     reto: {
         name: 'RETO PLTK',
         completion: retoCompletion,
+        // Streaming SSE. El estudiante empieza a leer en cuanto llega el
+        // primer fragmento de CONTENIDO (el razonamiento interno se filtra).
+        completionStream: retoCompletionStream,
+        streamSupported: true,
         // Solo se considera configurado si RETO_KEY existe. NO se activa por
         // defecto: la selección depende de AI_PROVIDER=reto.
         configured: () => !!process.env.RETO_KEY,
@@ -751,6 +765,104 @@ function clasificarHttp(status) {
     return { state: 'error', http: status };
 }
 
+/**
+ * STREAMING SSE — utilidades compartidas por los proveedores compatibles
+ * ==================================================================
+ * POR QUÉ EXISTE
+ *   La medición mostró TTFT ≈ 9,5 s y total ≈ 10,1 s: el gateway tarda en
+ *   EMPEZAR, no en producir el texto. Con streaming el estudiante empieza a
+ *   leer en cuanto llega el primer fragmento en vez de esperar a que termine.
+ *
+ * HALLAZGO CRÍTICO DEL PROTOCOLO (verificado con scripts/audit-stream.js)
+ *   RETO/grok-4.6 emite primero fragmentos con `delta.reasoning_content
+ *   (el razonamiento interno del modelo) y solo después `delta.content`.
+ *   Este código IGNORA `reasoning_content` por completo: el estudiante nunca
+ *   ve el monologo interno. Solo se emite el campo content.
+ *
+ * El `usage` llega en el ÚLTIMO fragmento (con stream_options.include_usage).
+ * Si no llegara, el servicio degrada a tokens estimados, no a cero.
+ */
+
+/**
+ * Parsea un flujo SSE (text/event-stream) y llama a los callbacks.
+ *
+ * @param {Response} res    respuesta fetch con body legible.
+ * @param {object} callbacks
+ * @param {(texto:string)=>void} callbacks.onDelta   trozo de respuesta visible
+ * @param {(usage:object)=>void} callbacks.onUsage   métricas finales (si llegan)
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<{text:string, usage:object|null, finishReason:string|null, fragmentos:number}>}
+ */
+async function consumirSSE(res, callbacks, signal) {
+    const onDelta = callbacks.onDelta || function () { };
+    const onUsage = callbacks.onUsage || function () { };
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buffer = '';
+    let texto = '';
+    let usage = null;
+    let finishReason = null;
+    let fragmentos = 0;
+
+    // Cancelar el lector libera la conexión del gateway en cuanto el
+    // estudiante cancela; sin esto la petición seguiría consumiendo cuota.
+    if (signal) {
+        const alAbort = () => {
+            try { reader.cancel(); } catch (_) { /* ya cerrado */ }
+        };
+        if (signal.aborted) alAbort();
+        else signal.addEventListener('abort', alAbort, { once: true });
+    }
+
+    while (true) {
+        let chunk;
+        try {
+            chunk = await reader.read();
+        } catch (error) {
+            if (signal && signal.aborted) break;   // cancelación ordenada
+            throw error;
+        }
+        if (chunk.done) break;
+
+        buffer += dec.decode(chunk.value, { stream: true });
+
+        // SSE delimita eventos por línea; el último trozo puede quedar a medias.
+        const lineas = buffer.split('\n');
+        buffer = lineas.pop() || '';
+
+        for (const linea of lineas) {
+            if (!linea.startsWith('data:')) continue;      // comentarios/keep-alive
+            const dato = linea.slice(5).trim();
+            if (!dato) continue;
+            if (dato === '[DONE]') return { text: texto, usage, finishReason, fragmentos };
+
+            let json;
+            try {
+                json = JSON.parse(dato);
+            } catch (_) {
+                continue;   // fragmento incompleto: se ignora, no rompe el flujo
+            }
+
+            fragmentos++;
+            if (json.usage) usage = json.usage;            // último fragmento
+            const choice = json.choices && json.choices[0];
+            if (!choice) continue;
+            if (choice.finish_reason) finishReason = choice.finish_reason;
+
+            const delta = choice.delta || {};
+            // SOLO contenido visible. `reasoning_content` se descarta a propósito.
+            const visible = delta.content;
+            if (typeof visible === 'string' && visible.length > 0) {
+                texto += visible;
+                onDelta(visible);
+            }
+        }
+    }
+
+    return { text: texto, usage, finishReason, fragmentos };
+}
+
 module.exports = {
     getProvider,
     getProviderName,
@@ -760,12 +872,117 @@ module.exports = {
     DEFAULT_MODELS,
     ollamaEnabled,
     getSecondaryProvider,
+    // Streaming SSE: parser puro, reutilizable y comprobable sin red.
+    consumirSSE,
     checkAvailability,
     getLastError,
     // Endpoint efectivo de cada proveedor (diagnóstico; sin credenciales).
     getEndpoint
 };
 
+/**
+ * Streaming de RETO PLTK (SSE, compatible OpenAI).
+ *
+ * Contrato: igual que completion(), pero invoca `onDelta(trozo)` conforme llega
+ * el texto visible. Devuelve el texto completo y los tokens.
+ *
+ * El razonamiento interno (`reasoning_content`) se descarta en consumirSSE.
+ */
+async function retoCompletionStream({ system, messages, model, maxTokens, temperature, signal, onDelta }) {
+        // Mismo contrato que completion(), pero entregando trozos.
+        // Si el proveedor aparece sin credencial, se falla rápido y claro.
+        const key = process.env.RETO_KEY;
+        if (!key) {
+            const e = new Error('RETO_KEY no configurada');
+            e.status = 401;
+            e.recoverable = false;
+            throw withHint(e, 'Falta RETO_KEY en el entorno del backend');
+        }
+
+        const cuerpo = {
+            model: model || process.env.RETO_MODEL || DEFAULT_MODELS.reto,
+            messages: system
+                ? [{ role: 'system', content: system }].concat(messages || [])
+                : (messages || []),
+            temperature: typeof temperature === 'number' ? temperature : 0.7,
+            stream: true,
+            // Necesario para recibir tokens/costes en el último fragmento.
+            stream_options: { include_usage: true }
+        };
+        if (Number.isFinite(maxTokens) && maxTokens > 0) cuerpo.max_tokens = maxTokens;
+
+        const timeoutMs = (aiConfig && aiConfig.timeoutMs) || 60000;
+        const controlador = new AbortController();
+        const timer = setTimeout(() => controlador.abort(), timeoutMs);
+        const alAbortExterno = () => controlador.abort();
+        if (signal) {
+            if (signal.aborted) controlador.abort();
+            else signal.addEventListener('abort', alAbortExterno, { once: true });
+        }
+
+        let res;
+        try {
+            res = await fetch(`${retoBaseUrl()}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${key}`
+                },
+                body: JSON.stringify(cuerpo),
+                signal: controlador.signal
+            });
+        } catch (error) {
+            clearTimeout(timer);
+            if (controlador.signal.aborted) {
+                if (signal && signal.aborted) {
+                    const e = new Error('La solicitud fue cancelada');
+                    e.status = 499;
+                    e.cancelado = true;
+                    throw e;
+                }
+                const e = new Error(`El proveedor tardó más de ${Math.round(timeoutMs / 1000)}s en responder`);
+                e.status = 408;
+                e.recoverable = false;
+                throw e;
+            }
+            const e = new Error(`No se pudo contactar al proveedor: ${error.message}`);
+            e.status = 503;
+            throw e;
+        }
+
+        if (!res.ok) {
+            clearTimeout(timer);
+            let detalle = '';
+            try { detalle = (await res.text()).slice(0, 200); } catch (_) { /* sin cuerpo */ }
+            const e = new Error(`RETO respondió ${res.status}`);
+            e.status = res.status;
+            e.detalle = detalle;
+            e.recoverable = res.status === 401 || res.status === 403 || res.status === 429 || res.status >= 500;
+            throw e;
+        }
+
+        let resultado;
+        try {
+            resultado = await consumirSSE(res, { onDelta }, controlador.signal);
+        } finally {
+            clearTimeout(timer);
+            if (signal) signal.removeEventListener('abort', alAbortExterno);
+        }
+
+        // Si el modelo solo emitió razonamiento y ningún contenido visible.
+        if (!resultado.text || !resultado.text.trim()) {
+            assertValidText(resultado.text, 'RETO PLTK');
+        }
+
+        return {
+            text: resultado.text,
+            inputTokens: (resultado.usage && resultado.usage.prompt_tokens) || 0,
+            outputTokens: (resultado.usage && resultado.usage.completion_tokens) || 0,
+            totalTokens: (resultado.usage && resultado.usage.total_tokens) || 0,
+            finishReason: resultado.finishReason,
+            fragmentos: resultado.fragmentos
+        };
+}
 /**
  * Endpoint efectivo que usará un proveedor (solo lectura, sin secretos).
  * Permite comparar la configuración real con la esperada en producción.

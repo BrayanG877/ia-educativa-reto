@@ -68,13 +68,17 @@
 
         <!-- Caja de prompt principal -->
         <section class="prompt-box">
-            <input
-                type="text"
+            <label class="sr-only" for="messageInput">Escribe tu pregunta</label>
+            <textarea
                 class="prompt-input"
                 id="messageInput"
-                placeholder="Escribe tu pregunta..."
-                aria-label="Campo de entrada de mensaje"
-            />
+                rows="1"
+                placeholder="Pregúntame lo que quieras aprender…"
+                aria-label="Escribe tu pregunta"
+                aria-describedby="inputHint"
+                autocomplete="off"
+            ></textarea>
+            <span id="inputHint" class="sr-only">Pulsa Enter para enviar y Shift+Enter para una nueva línea.</span>
 
             <div class="prompt-actions">
                 <div class="left-actions">
@@ -146,42 +150,79 @@
             <div class="options-menu-content">
                 <section class="menu-section">
                     <h3 class="section-title">Estudiar materias por separado</h3>
-                    <ul class="subjects-list">
-                        <li class="subject-item" data-subject="matematicas">
-                            <button class="subject-button">Matemáticas</button>
+                    <p class="section-hint">Elige una materia para estudiar con el tutor en ese contexto.</p>
+                    <ul class="subjects-grid" role="list">
+                        <li class="subject-item">
+                            <button class="subject-button" type="button" data-subject="matematicas">
+                                <span class="subject-emoji" aria-hidden="true">🔢</span>
+                                <span class="subject-name">Matemáticas</span>
+                            </button>
                         </li>
-                        <li class="subject-item" data-subject="biologia">
-                            <button class="subject-button">Biología / Ciencias Naturales</button>
+                        <li class="subject-item">
+                            <button class="subject-button" type="button" data-subject="biologia">
+                                <span class="subject-emoji" aria-hidden="true">🔬</span>
+                                <span class="subject-name">Biología / Ciencias Naturales</span>
+                            </button>
                         </li>
-                        <li class="subject-item" data-subject="fisica">
-                            <button class="subject-button">Física</button>
+                        <li class="subject-item">
+                            <button class="subject-button" type="button" data-subject="fisica">
+                                <span class="subject-emoji" aria-hidden="true">⚛️</span>
+                                <span class="subject-name">Física</span>
+                            </button>
                         </li>
-                        <li class="subject-item" data-subject="quimica">
-                            <button class="subject-button">Química</button>
+                        <li class="subject-item">
+                            <button class="subject-button" type="button" data-subject="quimica">
+                                <span class="subject-emoji" aria-hidden="true">⚗️</span>
+                                <span class="subject-name">Química</span>
+                            </button>
                         </li>
-                        <li class="subject-item" data-subject="sociales">
-                            <button class="subject-button">Ciencias Sociales / Historia / Geografía</button>
+                        <li class="subject-item">
+                            <button class="subject-button" type="button" data-subject="sociales">
+                                <span class="subject-emoji" aria-hidden="true">🌍</span>
+                                <span class="subject-name">Ciencias Sociales / Historia / Geografía</span>
+                            </button>
                         </li>
-                        <li class="subject-item" data-subject="español">
-                            <button class="subject-button">Español / Lengua Castellana / Literatura</button>
+                        <li class="subject-item">
+                            <button class="subject-button" type="button" data-subject="español">
+                                <span class="subject-emoji" aria-hidden="true">📖</span>
+                                <span class="subject-name">Español / Lengua Castellana / Literatura</span>
+                            </button>
                         </li>
-                        <li class="subject-item" data-subject="filosofia">
-                            <button class="subject-button">Filosofía</button>
+                        <li class="subject-item">
+                            <button class="subject-button" type="button" data-subject="filosofia">
+                                <span class="subject-emoji" aria-hidden="true">🤔</span>
+                                <span class="subject-name">Filosofía</span>
+                            </button>
                         </li>
-                        <li class="subject-item" data-subject="informatica">
-                            <button class="subject-button">Informática / Tecnología</button>
+                        <li class="subject-item">
+                            <button class="subject-button" type="button" data-subject="informatica">
+                                <span class="subject-emoji" aria-hidden="true">💻</span>
+                                <span class="subject-name">Informática / Tecnología</span>
+                            </button>
                         </li>
-                        <li class="subject-item" data-subject="ingles">
-                            <button class="subject-button">Inglés / Lenguas Extranjeras</button>
+                        <li class="subject-item">
+                            <button class="subject-button" type="button" data-subject="ingles">
+                                <span class="subject-emoji" aria-hidden="true">🗣️</span>
+                                <span class="subject-name">Inglés / Lenguas Extranjeras</span>
+                            </button>
                         </li>
-                        <li class="subject-item" data-subject="arte">
-                            <button class="subject-button">Arte / Educación Artística</button>
+                        <li class="subject-item">
+                            <button class="subject-button" type="button" data-subject="arte">
+                                <span class="subject-emoji" aria-hidden="true">🎨</span>
+                                <span class="subject-name">Arte / Educación Artística</span>
+                            </button>
                         </li>
-                        <li class="subject-item" data-subject="educacion-fisica">
-                            <button class="subject-button">Educación Física / Deportes</button>
+                        <li class="subject-item">
+                            <button class="subject-button" type="button" data-subject="educacion-fisica">
+                                <span class="subject-emoji" aria-hidden="true">⚽</span>
+                                <span class="subject-name">Educación Física / Deportes</span>
+                            </button>
                         </li>
-                        <li class="subject-item" data-subject="religion">
-                            <button class="subject-button">Religión</button>
+                        <li class="subject-item">
+                            <button class="subject-button" type="button" data-subject="religion">
+                                <span class="subject-emoji" aria-hidden="true">✅</span>
+                                <span class="subject-name">Religión</span>
+                            </button>
                         </li>
                     </ul>
                 </section>
@@ -190,9 +231,12 @@
 
                 <section class="menu-section">
                     <h3 class="section-title">Preparación para pruebas</h3>
-                    <ul class="subjects-list">
-                        <li class="subject-item" data-subject="icfes">
-                            <button class="subject-button icfes-button">ICFES</button>
+                    <ul class="subjects-grid" role="list">
+                        <li class="subject-item">
+                            <button class="subject-button icfes-button" type="button" data-subject="icfes">
+                                <span class="subject-emoji" aria-hidden="true">📝</span>
+                                <span class="subject-name">ICFES</span>
+                            </button>
                         </li>
                     </ul>
                 </section>
@@ -254,6 +298,7 @@
     </main>
 
     <script src="api-client.js"></script>
+    <script src="markdown.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

@@ -38,7 +38,9 @@ test('config: defaults seguros cuando no hay variables', () => {
         AI_FALLBACK_PROVIDERS: '', AI_MAX_INPUT_CHARS: '', AI_LOG_LEVEL: ''
     });
     assert.strictEqual(mod.provider, 'groq');
-    assert.strictEqual(mod.timeoutMs, 30000);
+    // 60 s: grok-4.6 tarda 10-55 s en respuestas largas. 30 s abortaba
+    // respuestas que SI terminaban (ver docs/TUTOR_BEHAVIOR.md).
+    assert.strictEqual(mod.timeoutMs, 60000);
     assert.strictEqual(mod.maxRetries, 1);
     assert.strictEqual(mod.fallbackEnabled, true);
     assert.ok(Array.isArray(mod.fallbackProviders));
@@ -49,7 +51,7 @@ test('config: valores fuera de rango usan default', () => {
     const { mod, restore } = cargarFresco('src/config/ai.config.js', {
         AI_TIMEOUT_MS: '999999', AI_MAX_RETRIES: '-5', AI_DEFAULT_TEMPERATURE: '9'
     });
-    assert.strictEqual(mod.timeoutMs, 30000);   // fuera de rango -> default
+    assert.strictEqual(mod.timeoutMs, 60000);   // fuera de rango -> default
     assert.strictEqual(mod.maxRetries, 1);      // negativo -> default
     assert.strictEqual(mod.temperature, 0.7);   // >2 -> default
     restore();

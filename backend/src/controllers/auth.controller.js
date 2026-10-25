@@ -31,8 +31,38 @@ const registerSchema = Joi.object({
     }),
     gradeLevel: Joi.string().allow(null, ''),
     institution: Joi.string().allow(null, ''),
-    parentConsent: Joi.boolean().default(false)
+    parentConsent: Joi.boolean().default(false),
+    // --- Rol (Fase 10) -------------------------------------------------
+    // Solo se admiten los roles autorizados por el producto en auto-registro.
+    // 'admin' NUNCA se acepta desde el formulario, y 'teacher' está sujeto a
+    // una aprobación adicional (ver TEACHER_SELF_REGISTRATION).
+    role: Joi.string().valid('student', 'teacher').default('student').messages({
+        'any.only': 'El rol solicitado no está permitido'
+    }),
+    // Asignatura: obligatoria SOLO cuando role='teacher'. Se valida contra el
+    // catálogo real de `subjects` en el backend, no contra una lista duplicada.
+    subject: Joi.string().max(50).allow(null, '')
+}).custom((value, helpers) => {
+    if (value.role === 'teacher' && !value.subject) {
+        return helpers.message('La asignatura es obligatoria para el rol de profesor');
+    }
+    return value;
 });
+
+/**
+ * ¿Puede un usuario auto-registrarse como profesor?
+ *
+ * POLÍTICA POR DEFECTO: NO. El auto-registro público de un rol privilegiado
+ * permitiría a cualquiera declararse docente. El rol se otorga mediante
+ * aprovisionamiento autorizado (seed de desarrollo o un administrador).
+ *
+ * Se puede habilitar explícitamente en entornos controlados con
+ *   TEACHER_SELF_REGISTRATION=true
+ * sin cambiar el código. En producción debe permanecer deshabilitado.
+ */
+function autoRegistroDocentePermitido() {
+    return String(process.env.TEACHER_SELF_REGISTRATION || '').toLowerCase() === 'true';
+}
 
 /**
  * Validación de login
@@ -63,7 +93,41 @@ exports.register = catchAsync(async (req, res) => {
         throw new AppError(error.details[0].message, 400);
     }
 
-    const { email, password, username, fullName, gradeLevel, institution, parentConsent } = value;
+    const { email, password, username, fullName, gradeLevel, institution, parentConsent, role, subject } = value;
+
+    // ------------------------------------------------------------------
+    // ROL: el cliente NO puede elegir libremente ser profesor.
+    // 'admin' ya está excluido por el esquema. Para 'teacher' se exige que el
+    // auto-registro docente esté habilitado explícitamente.
+    // ------------------------------------------------------------------
+    const rolSolicitado = role || 'student';
+    if (rolSolicitado === 'teacher' && !autoRegistroDocentePermitido()) {
+        throw new AppError(
+            'El registro de profesores requiere aprobación. Solicita el acceso a la institución.',
+            403
+        );
+    }
+
+    // ------------------------------------------------------------------
+    // ASIGNATURA: se valida contra el catálogo REAL de `subjects`.
+    // Nunca contra una lista duplicada en el frontend.
+    // ------------------------------------------------------------------
+    let subjectCode = null;
+    if (rolSolicitado === 'teacher') {
+        const codigo = String(subject || '').trim().toLowerCase();
+        if (!/^[a-z][a-z0-9_-]{1,49}$/.test(codigo)) {
+            throw new AppError('La asignatura no es válida', 400);
+        }
+        const existe = await query(
+            'SELECT code FROM subjects WHERE code = @param1 AND is_active = 1',
+            [codigo]
+        );
+        if (!existe.rows || existe.rows.length === 0) {
+            throw new AppError('La asignatura seleccionada no existe en la plataforma', 400);
+        }
+        subjectCode = codigo;
+    }
+
 
     // Verificar si el email ya existe
     const emailCheck = await query(
@@ -92,11 +156,11 @@ exports.register = catchAsync(async (req, res) => {
     const result = await query(
         `INSERT INTO users (
             email, password_hash, username, full_name,
-            grade_level, institution, parent_consent, role
+            grade_level, institution, parent_consent, role, primary_subject
         )
         OUTPUT INSERTED.id, INSERTED.email, INSERTED.username, INSERTED.created_at
-        VALUES (@param1, @param2, @param3, @param4, @param5, @param6, @param7, @param8)`,
-        [email, passwordHash, username, fullName, gradeLevel, institution, parentConsent ? 1 : 0, 'student']
+        VALUES (@param1, @param2, @param3, @param4, @param5, @param6, @param7, @param8, @param9)`,
+        [email, passwordHash, username, fullName, gradeLevel, institution, parentConsent ? 1 : 0, rolSolicitado, subjectCode]
     );
 
     const newUser = result.rows[0];
@@ -108,7 +172,7 @@ exports.register = catchAsync(async (req, res) => {
     await query(
         `INSERT INTO audit_logs (user_id, action, resource, details)
          VALUES (@param1, @param2, @param3, @param4)`,
-        [newUser.id, 'USER_REGISTERED', 'users', JSON.stringify({ username, email })]
+        [newUser.id, 'USER_REGISTERED', 'users', JSON.stringify({ username, role: rolSolicitado })]
     );
 
     res.status(201).json({
@@ -137,7 +201,7 @@ exports.login = catchAsync(async (req, res) => {
 
     // Buscar usuario
     const result = await query(
-        `SELECT id, email, password_hash, username, full_name, role, is_active
+        `SELECT id, email, password_hash, username, full_name, role, primary_subject, is_active
          FROM users
          WHERE email = @param1`,
         [email]
@@ -186,6 +250,7 @@ exports.login = catchAsync(async (req, res) => {
             username: user.username,
             fullName: user.full_name,
             role: user.role,
+            primarySubject: user.primary_subject || null,
             token
         }
     });
@@ -227,7 +292,7 @@ exports.getProfile = catchAsync(async (req, res) => {
 
     const result = await query(
         `SELECT
-            id, email, username, full_name, role,
+            id, email, username, full_name, role, primary_subject,
             grade_level, institution, parent_consent,
             is_active, is_verified, created_at, last_login
          FROM users
@@ -242,6 +307,26 @@ exports.getProfile = catchAsync(async (req, res) => {
     res.json({
         success: true,
         data: result.rows[0]
+    });
+});
+
+/**
+ * Obtener catálogo público de asignaturas
+ * Lo usa el formulario de registro del profesor como fuente única de materias.
+ */
+exports.getSubjects = catchAsync(async (req, res) => {
+    const result = await query(
+        `SELECT code, name, emoji, description
+           FROM subjects
+          WHERE is_active = 1
+          ORDER BY name`
+    );
+    res.json({
+        success: true,
+        data: {
+            subjects: result.rows || [],
+            count: (result.rows || []).length
+        }
     });
 });
 
