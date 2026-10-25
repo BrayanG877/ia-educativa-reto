@@ -465,7 +465,8 @@ exports.streamMessage = async (req, res) => {
 /**
  * Obtener historial de conversación
  */
-exports.getHistory = catchAsync(async (req, res) => {    const { conversationId } = req.params;
+exports.getHistory = catchAsync(async (req, res) => {
+    const { conversationId } = req.params;
     const userId = req.userId; // Del middleware JWT
 
     // Validar UUID

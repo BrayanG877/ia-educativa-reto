@@ -222,3 +222,76 @@ test('stream(16): el frontend no duplica el mensaje tras el streaming', () => {
     assert.ok(/yaMostrado/.test(app), 'Debe existir la guarda contra pintado doble');
     assert.ok(/if \(!aiMessage\.yaMostrado\)/.test(app));
 });
+// ==================================================================
+// 4. Garantías del flujo completo (contrato del controlador)
+// ==================================================================
+/**
+ * Estas comprobaciones son ESTÁTICAS sobre el código del controlador.
+ * Verifican que el registro de analítica está condicionado a que el turno
+ * haya TERMINADO, y que no hay rutas que lo ejecuten dos veces.
+ *
+ * La prueba dinámica (con BD y proveedor dobles) está limitada por el
+ * aislamiento de módulos; por eso se fija aquí el contrato estructural.
+ */
+const fs = require('fs');
+const CTRL = fs.readFileSync(
+    path.join(__dirname, '..', 'src', 'controllers', 'chat.controller.js'), 'utf8'
+);
+
+/** Extrae el cuerpo de exports.streamMessage. */
+function cuerpoStreamMessage() {
+    const inicio = CTRL.indexOf('exports.streamMessage');
+    assert.ok(inicio > -1, 'streamMessage debe existir');
+    const fin = CTRL.indexOf('exports.getHistory', inicio);
+    return CTRL.slice(inicio, fin);
+}
+
+test('stream(17): solo hay UN registro de analítica en el flujo de streaming', () => {
+    const cuerpo = cuerpoStreamMessage();
+    const llamadas = (cuerpo.match(/registrarEvento\s*\(/g) || []).length;
+    assert.strictEqual(llamadas, 1, 'Un turno = un evento; ni cero ni dos');
+});
+
+test('stream(18): el registro ocurre DESPUÉS de la cancelación y al final', () => {
+    const cuerpo = cuerpoStreamMessage();
+    const posCancelacion = cuerpo.indexOf('if (canceladoPorCliente) return;');
+    const posRegistro = cuerpo.indexOf('registrarEvento');
+    const posCompleto = cuerpo.indexOf('completo = true');
+
+    assert.ok(posCancelacion > -1, 'Debe salir antes de persistir si se canceló');
+    assert.ok(posRegistro > posCancelacion, 'No se registra si el cliente canceló');
+    assert.ok(posCompleto > posRegistro, 'El turno se marca completo tras registrar');
+});
+
+test('stream(19): un error NO registra evento (el catch no llama a registrar)', () => {
+    const cuerpo = cuerpoStreamMessage();
+    const posCatch = cuerpo.indexOf('} catch (error) {');
+    const posFinally = cuerpo.indexOf('} finally {');
+    const bloqueCatch = cuerpo.slice(posCatch, posFinally);
+    assert.ok(posCatch > -1 && posFinally > posCatch);
+    assert.ok(!/registrarEvento/.test(bloqueCatch), 'El catch no debe registrar eventos');
+});
+
+test('stream(20): la respuesta al cliente nunca incluye razonamiento interno', () => {
+    const cuerpo = cuerpoStreamMessage();
+    // El único contenido que se emite es el que llega por onDelta, ya filtrado.
+    assert.ok(/onDelta:\s*\(trozo\)/.test(cuerpo));
+    // Y el proveedor solo emite delta.content
+    const prov = fs.readFileSync(path.join(__dirname, '..', 'src', 'services', 'ai.providers.js'), 'utf8');
+    assert.ok(/const visible = delta\.content;/.test(prov));
+    assert.ok(!/onDelta\(\s*delta\.reasoning_content/.test(prov));
+});
+
+test('stream(21): no se reintenta automáticamente tras emitir texto', () => {
+    const cuerpo = cuerpoStreamMessage();
+    // No debe existir un bucle de reintento ni una segunda llamada al servicio.
+    const llamadasServicio = (cuerpo.match(/generateResponseStream\s*\(/g) || []).length;
+    assert.strictEqual(llamadasServicio, 1, 'Una sola llamada al servicio por turno');
+});
+
+test('stream(22): la conversación se valida contra el usuario autenticado', () => {
+    const cuerpo = cuerpoStreamMessage();
+    assert.ok(/WHERE id = @param1 AND user_id = @param2/.test(cuerpo),
+        'Debe verificarse la propiedad de la conversación (aislamiento por usuario)');
+    assert.ok(/req\.userId/.test(cuerpo));
+});
