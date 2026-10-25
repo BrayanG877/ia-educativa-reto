@@ -68,13 +68,17 @@
 
         <!-- Caja de prompt principal -->
         <section class="prompt-box">
-            <input
-                type="text"
+            <label class="sr-only" for="messageInput">Escribe tu pregunta</label>
+            <textarea
                 class="prompt-input"
                 id="messageInput"
-                placeholder="Escribe tu pregunta..."
-                aria-label="Campo de entrada de mensaje"
-            />
+                rows="1"
+                placeholder="Pregúntame lo que quieras aprender…"
+                aria-label="Escribe tu pregunta"
+                aria-describedby="inputHint"
+                autocomplete="off"
+            ></textarea>
+            <span id="inputHint" class="sr-only">Pulsa Enter para enviar y Shift+Enter para una nueva línea.</span>
 
             <div class="prompt-actions">
                 <div class="left-actions">

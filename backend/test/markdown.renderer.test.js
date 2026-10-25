@@ -88,12 +88,12 @@ test('markdown(7): solo se generan etiquetas de la lista blanca', () => {
     ].join('\n\n');
     const html = Markdown.safeRender(md);
 
-    const permitidas = /^<\/?(h1|h2|h3|h4|p|ul|ol|li|strong|em|code|pre|blockquote|table|thead|tbody|tr|th|td|hr|a|del|div|br|i|span)$/;
+    const permitidas = /^<\/?(h1|h2|h3|h4|p|ul|ol|li|strong|em|code|pre|blockquote|table|thead|tbody|tr|th|td|hr|a|del|div|br|i|span|button)$/;
     const etiquetas = html.match(/<\/?([a-zA-Z0-9]+)/g) || [];
     for (const t of etiquetas) {
         const nombre = t.replace(/[<\/]/g, '').toLowerCase();
         assert.ok(permitidas.test(t.replace(/[<\/]/g, '')) || ['h1', 'h2', 'h3', 'h4', 'p', 'ul', 'ol', 'li',
-            'strong', 'em', 'code', 'pre', 'blockquote', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'a', 'del', 'div', 'br', 'i', 'span'].includes(nombre),
+            'strong', 'em', 'code', 'pre', 'blockquote', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'hr', 'a', 'del', 'div', 'br', 'i', 'span', 'button'].includes(nombre),
             `Etiqueta no permitida: <${nombre}>`);
     }
 });

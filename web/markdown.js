@@ -173,8 +173,14 @@
                 }
                 i++; // salta el cierre
                 const clase = lenguaje ? ' class="lang-' + lenguaje.replace(/[^a-z0-9_-]/gi, '') + '"' : '';
-                salida.push('<pre class="md-code-block"><code' + clase + '>' +
-                    cuerpo.join('\n') + '</code></pre>');
+                const idioma = lenguaje ? lenguaje.replace(/[^a-z0-9_-]/gi, '') : 'texto';
+                salida.push(
+                    '<div class="md-code-wrap">' +
+                    '<button type="button" class="md-copy" data-copy aria-label="Copiar código">Copiar</button>' +
+                    '<pre class="md-code-block"><code' + clase + '>' + cuerpo.join('\n') + '</code></pre>' +
+                    '<span class="md-lang" aria-hidden="true">' + idioma + '</span>' +
+                    '</div>'
+                );
                 continue;
             }
 

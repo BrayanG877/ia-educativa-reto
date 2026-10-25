@@ -141,7 +141,7 @@ fallbackProviders = fallbackProviders.filter(p => {
 if (!fallbackEnabled) fallbackProviders = [];
 
 // --- Parámetros numéricos ---
-const timeoutMs = readInt(env.AI_TIMEOUT_MS, 30000, 1000, 120000);
+const timeoutMs = readInt(env.AI_TIMEOUT_MS, 60000, 1000, 120000);
 const maxRetries = readInt(env.AI_MAX_RETRIES, 1, 0, 3);
 const maxInputChars = readInt(env.AI_MAX_INPUT_CHARS, 5000, 1, 100000);
 const maxOutputTokens = readInt(env.AI_MAX_OUTPUT_TOKENS, parseInt(env.MAX_TOKENS_PER_REQUEST, 10) || 1000, 1, 32000);

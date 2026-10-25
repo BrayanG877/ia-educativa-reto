@@ -250,7 +250,9 @@ async function processToolRequest(toolId, message, subject) {
         throw new Error('Cliente de herramientas no disponible');
     }
 
-    const subjectCode = subject || 'matematicas';
+    // Igual que en el chat: las herramientas de evaluación también deben
+    // respetar la materia real. Sin selección explícita no se impone una.
+    const subjectCode = subject || 'general';
 
     switch(toolId) {
         case 'test-prep':
@@ -348,6 +350,8 @@ async function handleSendMessage() {
         // Deshabilitar input y botón durante envío
         elements.messageInput.disabled = true;
         elements.micButton.disabled = true;
+        // Estado visual del compositor mientras el tutor responde
+        document.querySelector('.prompt-box')?.classList.add('is-sending');
 
         // Mostrar indicador de escritura
         showTypingIndicator();
@@ -363,8 +367,9 @@ async function handleSendMessage() {
         let mode = 'socratic';
 
         if (AppState.selectedTool && toolsWithSpecialProcessing.includes(AppState.selectedTool.id)) {
-            // Procesar con herramienta específica
-            const subject = AppState.selectedSubject?.id || 'matematicas';
+            // Procesar con herramienta específica.
+            // Se respeta la materia elegida; si no hay, NO se impone una.
+            const subject = AppState.selectedSubject?.id || null;
             response = await processToolRequest(AppState.selectedTool.id, messageText, subject);
 
             // Convertir respuesta de herramienta al formato estándar
@@ -373,8 +378,17 @@ async function handleSendMessage() {
                 response.conversationId = AppState.conversationId;
             }
         } else {
-            // Enviar mensaje normal al backend
-            const subject = AppState.selectedSubject?.id || 'matematicas';
+            // Enviar mensaje normal al backend.
+            //
+            // CORRECCIÓN DEL FALLO P0 «¿Quién fue Cristóbal Colón?»:
+            // antes se enviaba `|| 'matematicas'`, de modo que CUALQUIER pregunta
+            // sin materia elegida llegaba al modelo como si fuera de Matemáticas
+            // y el tutor respondía con preguntas de operaciones básicas.
+            //
+            // Ahora, sin selección explícita, se envía `null`: el backend infiere
+            // la materia del propio mensaje (intent.service) y el tutor responde
+            // en la materia que el estudiante preguntó.
+            const subject = AppState.selectedSubject?.id || null;
 
             // MODO SOCRÁTICO POR DEFECTO (obligatorio)
             // Las herramientas pueden cambiar el modo
@@ -457,6 +471,8 @@ async function handleSendMessage() {
         // Rehabilitar input y botón
         elements.messageInput.disabled = false;
         elements.micButton.disabled = false;
+        document.querySelector('.prompt-box')?.classList.remove('is-sending');
+        autoAjustarEntrada();
         elements.messageInput.focus();
 
         // Marcar como no enviando
@@ -581,6 +597,46 @@ function displayMessage(message) {
 }
 
 /**
+ * Copiar código de las respuestas del tutor.
+ * Delegación en el contenedor: un solo listener sirve para todos los bloques,
+ * incluidos los que se añadan después.
+ */
+function manejarCopiaCodigo(event) {
+    const boton = event.target.closest('[data-copy]');
+    if (!boton) return;
+
+    const envoltorio = boton.closest('.md-code-wrap');
+    const codigo = envoltorio && envoltorio.querySelector('code');
+    if (!codigo) return;
+
+    const texto = codigo.textContent;
+    const confirmar = () => {
+        const original = boton.textContent;
+        boton.textContent = 'Copiado';
+        boton.classList.add('copiado');
+        setTimeout(() => {
+            boton.textContent = original;
+            boton.classList.remove('copiado');
+        }, 1600);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(texto).then(confirmar).catch(() => { });
+    } else {
+        // Fallback para contextos sin Clipboard API (http no seguro)
+        const area = document.createElement('textarea');
+        area.value = texto;
+        area.setAttribute('readonly', '');
+        area.style.position = 'absolute';
+        area.style.left = '-9999px';
+        document.body.appendChild(area);
+        area.select();
+        try { document.execCommand('copy'); confirmar(); } catch (_) { /* sin permiso */ }
+        document.body.removeChild(area);
+    }
+}
+
+/**
  * Muestra indicador de que la IA está escribiendo
  */
 function showTypingIndicator() {
@@ -644,10 +700,26 @@ function simulateAIResponse(userMessage) {
  * Maneja el evento de tecla presionada en el input
  */
 function handleKeyPress(event) {
+    // Enter envía; Shift+Enter inserta una nueva línea.
+    // `keydown` (no `keypress`) es el evento fiable para Enter dentro de un
+    // <textarea>: `keypress` no se dispara en todos los IME/navegadores tras
+    // Shift+Enter, y el campo quedaba sin poder enviar.
     if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
         handleSendMessage();
     }
+}
+
+/**
+ * Ajusta la altura del campo de escritura al contenido (1–5 líneas),
+ * sin ocultar nunca el texto.
+ */
+function autoAjustarEntrada() {
+    const el = elements.messageInput;
+    if (!el || el.tagName !== 'TEXTAREA') return;
+    el.style.height = 'auto';
+    const max = 5 * 24 + 24; // ~5 líneas + padding
+    el.style.height = Math.min(el.scrollHeight, max) + 'px';
 }
 
 // ===================================
@@ -715,7 +787,9 @@ function initializeEventListeners() {
     });
 
     // Input de mensaje
-    elements.messageInput.addEventListener('keypress', handleKeyPress);
+    elements.messageInput.addEventListener('keydown', handleKeyPress);
+    elements.messageInput.addEventListener('input', autoAjustarEntrada);
+    elements.messagesContainer.addEventListener('click', manejarCopiaCodigo);
 
     // Botón de limpiar materia
     elements.clearSubject.addEventListener('click', clearSubjectSelection);

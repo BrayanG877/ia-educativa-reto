@@ -15,6 +15,7 @@ const aiProviders = require('./ai.providers');
 const { listProviders } = aiProviders;
 const cacheService = require('./cache.service');
 const promptService = require('./prompt.service');
+const intentService = require('./intent.service');
 const tutorIntegration = require('./tutor.integration');
 const { AppError } = require('../middleware/error.middleware');
 const crypto = require('crypto');
@@ -174,7 +175,12 @@ function toAppError(error, providerName) {
     }
 
     if (s === 408 || s === 504 || error?.name === 'AbortError') {
-        return new AppError('La respuesta está tardando más de lo esperado. Intenta con una pregunta más corta.', 504);
+        return new AppError(
+            'El tutor tardó más de lo esperado en responder. Tu pregunta no se perdió: ' +
+            'vuelve a enviarla o prueba a pedir algo más concreto. ' +
+            '(Si se repite, el modelo está saturado; intenta en unos minutos.)',
+            504
+        );
     }
 
     if (s === 502) {
@@ -271,8 +277,20 @@ async function generateWithProvider({ provider, providerName, message, subject, 
             };
         }
 
-        // Preparar system prompt según modo y materia
-        const baseSystemPrompt = promptService.getSystemPrompt(mode, subject);
+        // Preparar system prompt según modo y materia.
+        //
+        // CONTEXTO DEL TURNO (corrección del fallo «Cristóbal Colón»):
+        //   - Si el cliente no envía materia (o envía una que no corresponde
+        //     al mensaje), se infiere la materia del propio texto.
+        //   - Se añade al MISMO system prompt una instrucción breve que fija
+        //     qué se preguntó y qué se debe hacer en este turno.
+        //   La inferencia es puramente léxica (intent.service): no añade una
+        //     llamada al modelo, así que no cuesta latencia.
+        const deteccion = intentService.detectarMateria(message, subject);
+        const materiaEfectiva = deteccion.materia || subject;
+        const intencion = intentService.detectarIntencion(message);
+
+        const baseSystemPrompt = promptService.getSystemPrompt(mode, materiaEfectiva);
 
         // Agente tutor: si está habilitado (AGENT_ENABLED=true), se AÑADE el
         // contexto pedagógico del turno AL MISMO system prompt (no se crea un
@@ -280,11 +298,19 @@ async function generateWithProvider({ provider, providerName, message, subject, 
         // agente está desactivado o falla, el contexto es '' y el prompt queda
         // idéntico al anterior (fallback seguro).
         const contextoPedagogico = tutorIntegration.construirContextoPedagogico({
-            message, subject, mode, history
+            message, subject: materiaEfectiva, mode, history
         });
-        const systemPrompt = contextoPedagogico
-            ? `${baseSystemPrompt}\n\n${contextoPedagogico}`
-            : baseSystemPrompt;
+
+        // Instrucción de turno: qué se preguntó exactamente y cómo responderlo.
+        const instruccionTurno = intentService.construirInstruccionDeTurno({
+            mensaje: message,
+            materia: materiaEfectiva,
+            intencion,
+            historial: history
+        });
+        const systemPrompt = [baseSystemPrompt, contextoPedagogico, instruccionTurno]
+            .filter(Boolean)
+            .join('\n\n');
 
         // Preparar historial de mensajes (limitar para optimizar costos)
         const messages = prepareMessages(history, message);

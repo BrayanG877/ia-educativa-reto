@@ -77,6 +77,16 @@ async function postJson(url, body, headers, timeoutMs = DEFAULT_TIMEOUT_MS) {
         if (error.name === 'AbortError') {
             const e = new Error(`El proveedor tardó más de ${Math.round(timeoutMs / 1000)}s en responder`);
             e.status = 408;
+            // NO se reintenta con otro proveedor tras un timeout.
+            //
+            // Por qué: el proveedor seguía trabajando (grok-4.6 puede tardar
+            // 30-60 s). Abortar y repetir la misma petición en otro proveedor
+            // no la hace más rápida: el estudiante espera el timeout COMPLETO y
+            // además el doble (medido: una respuesta de ~54 s se convertía en
+            // >90 s con reintento). Y si el segundo también expira, devuelve
+            // error tras haber esperado dos veces.
+            // Es más honesto responder «tardó demasiado» rápido.
+            e.recoverable = false;
             throw e;
         }
         // Fallo de red (DNS, TLS, conexión rechazada): 503 para el mapeo de errores.
