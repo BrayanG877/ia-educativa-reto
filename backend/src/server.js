@@ -21,6 +21,7 @@ const authRoutes = require('./routes/auth.routes');
 const chatRoutes = require('./routes/chat.routes');
 const metricsRoutes = require('./routes/metrics.routes');
 const toolsRoutes = require('./routes/tools.routes');
+const teacherRoutes = require('./routes/teacher.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -233,6 +234,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/tools', toolsRoutes);
 app.use('/api/metrics', metricsRoutes);
+app.use('/api/teacher', teacherRoutes);
 
 // Manejo de rutas no encontradas
 app.use((req, res) => {

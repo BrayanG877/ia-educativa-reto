@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel docente - IA Educativa</title>
+    <link rel="stylesheet" href="teacher.css">
+</head>
+<body>
+    <!-- ============================ BARRA SUPERIOR ============================ -->
+    <header class="topbar">
+        <div class="brand">
+            <span class="brand-mark" aria-hidden="true">🎓</span>
+            <div>
+                <strong>IA Educativa</strong>
+                <span class="brand-sub">Panel docente</span>
+            </div>
+        </div>
+
+        <nav class="topnav" aria-label="Navegación principal">
+            <button class="nav-btn" id="logoutBtn" type="button">Cerrar sesión</button>
+        </nav>
+    </header>
+
+    <main class="layout" id="main">
+        <!-- ======================= ESTADO GLOBAL ======================= -->
+        <div id="globalMessage" class="alert hidden" role="status" aria-live="polite"></div>
+
+        <!-- ======================= ENCABEZADO ACADÉMICO ======================= -->
+        <section class="academic-header" id="academicHeader" aria-labelledby="academicTitle">
+            <div class="ah-main">
+                <p class="ah-eyebrow" id="teacherName">Profesor</p>
+                <h1 id="academicTitle" class="ah-title">
+                    <span id="subjectLabel">Asignatura</span>
+                    <span class="ah-sep" aria-hidden="true">·</span>
+                    <span id="groupLabel">Grupo</span>
+                </h1>
+                <p class="ah-meta">
+                    <span id="enrolledLabel">—</span>
+                    <span class="ah-sep" aria-hidden="true">·</span>
+                    <span id="updatedLabel">Sin datos aún</span>
+                </p>
+            </div>
+
+            <div class="ah-controls">
+                <label class="control">
+                    <span>Grupo y asignatura</span>
+                    <select id="groupIdSelect" aria-label="Seleccionar grupo y asignatura"></select>
+                </label>
+                <label class="control">
+                    <span>Período</span>
+                    <select id="periodSelect" aria-label="Período de análisis">
+                        <option value="7">Últimos 7 días</option>
+                        <option value="30" selected>Últimos 30 días</option>
+                        <option value="90">Últimos 90 días</option>
+                        <option value="365">Último año</option>
+                    </select>
+                </label>
+            </div>
+        </section>
+
+        <!-- ======================= ESTADOS ======================= -->
+        <section id="loadingState" class="state-panel" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <p>Cargando el panel docente…</p>
+        </section>
+
+        <section id="errorState" class="state-panel hidden" role="alert">
+            <h2>No se pudo cargar el panel</h2>
+            <p id="errorText">Ocurrió un error inesperado.</p>
+            <button class="btn" id="retryBtn" type="button">Reintentar</button>
+        </section>
+
+        <section id="emptyState" class="state-panel hidden">
+            <h2>Aún no hay grupos asignados</h2>
+            <p>
+                Tu cuenta no tiene todavía un grupo asignado. Cuando la institución te
+                asigne una asignatura y un grupo, aparecerán aquí los datos de tus estudiantes.
+            </p>
+            <p class="state-hint">
+                Si acabas de crear tu cuenta, pide al administrador que asocie tu usuario
+                a un grupo.
+            </p>
+        </section>
+
+        <!-- ======================= CONTENIDO ======================= -->
+        <div id="panelContent" class="hidden">
+
+            <!-- Indicadores principales -->
+            <section class="kpis" aria-label="Indicadores del grupo">
+                <article class="kpi">
+                    <p class="kpi-label">Estudiantes inscritos</p>
+                    <p class="kpi-value" id="kpiEnrolled">—</p>
+                    <p class="kpi-note" id="kpiEnrolledNote">Matrícula del grupo</p>
+                </article>
+                <article class="kpi">
+                    <p class="kpi-label">Con actividad en el período</p>
+                    <p class="kpi-value" id="kpiActive">—</p>
+                    <p class="kpi-note" id="kpiActiveNote">Al menos un turno registrado</p>
+                </article>
+                <article class="kpi">
+                    <p class="kpi-label">Tasa de acierto</p>
+                    <p class="kpi-value" id="kpiAccuracy">—</p>
+                    <p class="kpi-note">Proporción de turnos evaluados correctos</p>
+                </article>
+                <article class="kpi">
+                    <p class="kpi-label">Temas con evidencia</p>
+                    <p class="kpi-value" id="kpiTopics">—</p>
+                    <p class="kpi-note" id="kpiTopicsNote">Conceptos trabajados</p>
+                </article>
+            </section>
+
+            <!-- Aviso de datos insuficientes -->
+            <section id="insufficient" class="notice hidden" role="status">
+                <h2>Datos insuficientes para una tendencia</h2>
+                <p id="insufficientText">
+                    Todavía no hay suficientes actividades para identificar una tendencia de aprendizaje.
+                </p>
+            </section>
+
+            <!-- Dificultades y fortalezas por tema -->
+            <section class="grid-2" aria-label="Temas del grupo">
+                <article class="card">
+                    <header class="card-head">
+                        <h2>Temas que requieren refuerzo</h2>
+                        <p class="card-sub">Identificados por tasa de acierto sobre turnos evaluados.</p>
+                    </header>
+                    <div id="reinforceList" class="topic-list"></div>
+                </article>
+
+                <article class="card">
+                    <header class="card-head">
+                        <h2>Temas con progreso favorable</h2>
+                        <p class="card-sub">Aún son estimaciones del tutor, no calificaciones formales.</p>
+                    </header>
+                    <div id="favorableList" class="topic-list"></div>
+                </article>
+            </section>
+
+            <!-- Alertas pedagógicas -->
+            <section class="card" aria-labelledby="alertsTitle">
+                <header class="card-head">
+                    <h2 id="alertsTitle">Alertas pedagógicas</h2>
+                    <p class="card-sub">Situaciones que conviene revisar en clase.</p>
+                </header>
+                <div id="alertsList" class="alert-list"></div>
+            </section>
+
+            <!-- Evolución -->
+            <section class="card" aria-labelledby="chartTitle">
+                <header class="card-head">
+                    <h2 id="chartTitle">Evolución del desempeño</h2>
+                    <p class="card-sub" id="chartSub">Tasa de acierto por día · turnos evaluados</p>
+                </header>
+                <div id="chartArea" class="chart-area">
+                    <p class="empty-inline">Sin actividad en el período seleccionado.</p>
+                </div>
+                <p class="chart-legend" id="chartLegend"></p>
+            </section>
+
+            <!-- Errores recurrentes -->
+            <section class="card" aria-labelledby="errorsTitle">
+                <header class="card-head">
+                    <h2 id="errorsTitle">Errores conceptuales recurrentes</h2>
+                    <p class="card-sub">Clasificados por el agente con reglas reproducibles.</p>
+                </header>
+                <div id="errorsList" class="tag-list"></div>
+            </section>
+
+            <!-- Lista de estudiantes -->
+            <section class="card" aria-labelledby="studentsTitle">
+                <header class="card-head card-head-row">
+                    <div>
+                        <h2 id="studentsTitle">Estudiantes del grupo</h2>
+                        <p class="card-sub" id="studentsSub">Selecciona un estudiante para ver su perfil académico.</p>
+                    </div>
+                    <label class="search">
+                        <span class="sr-only">Buscar estudiante</span>
+                        <input type="search" id="studentSearch" placeholder="Buscar por nombre o usuario…">
+                    </label>
+                </header>
+
+                <div class="table-wrap">
+                    <table class="students-table">
+                        <caption class="sr-only">Estudiantes inscritos en el grupo seleccionado</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Estudiante</th>
+                                <th scope="col">Usuario</th>
+                                <th scope="col">Actividad</th>
+                                <th scope="col">Tasa de acierto</th>
+                                <th scope="col">Última actividad</th>
+                                <th scope="col"><span class="sr-only">Acciones</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsBody"></tbody>
+                    </table>
+                </div>
+                <p class="table-empty hidden" id="studentsEmpty">No hay estudiantes inscritos en este grupo.</p>
+            </section>
+        </div>
+    </main>
+
+    <!-- ======================= PANEL LATERAL: PERFIL ======================= -->
+    <div class="drawer-backdrop hidden" id="drawerBackdrop"></div>
+    <aside class="drawer hidden" id="studentDrawer" role="dialog" aria-modal="true"
+           aria-labelledby="drawerTitle" tabindex="-1">
+        <header class="drawer-head">
+            <div>
+                <p class="drawer-eyebrow">Perfil académico</p>
+                <h2 id="drawerTitle">Estudiante</h2>
+                <p class="drawer-sub" id="drawerSub"></p>
+            </div>
+            <button class="icon-btn" id="drawerClose" type="button" aria-label="Cerrar perfil">✕</button>
+        </header>
+
+        <div class="drawer-body" id="drawerBody"></div>
+
+        <footer class="drawer-foot">
+            <p class="drawer-note">
+                Las observaciones se basan en evidencias registradas durante las sesiones de tutoría.
+                Son un apoyo a tu criterio profesional, no un diagnóstico definitivo.
+            </p>
+        </footer>
+    </aside>
+
+    <script src="api-client.js"></script>
+    <script src="teacher.js"></script>
+</body>
+</html>

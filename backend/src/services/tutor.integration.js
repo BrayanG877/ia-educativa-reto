@@ -65,6 +65,32 @@ function planificarSeguro({ message, subject, mode, history }) {
 }
 
 /**
+ * Plan del turno para INSTRUMENTACIÓN (analítica del panel docente).
+ *
+ * Diferencia clave con planificarSeguro(): NO exige AGENT_ENABLED.
+ * El enriquecimiento del prompt sigue controlado por esa bandera (el
+ * estudiante recibe exactamente el mismo texto que antes); aquí solo se
+ * calcula la clasificación pedagógica del turno para poder registrar un
+ * evento de aprendizaje verificable.
+ *
+ * @returns {object|null} plan, o null si el núcleo pedagógico no está disponible.
+ */
+function planInstrumentacion({ message, subject, mode, history }) {
+    if (!tutorAgent) return null;
+    try {
+        return tutorAgent.planificarTurno({
+            mensaje: message,
+            subject,
+            mode,
+            historial: Array.isArray(history) ? history : []
+        });
+    } catch (error) {
+        console.error('[AGENTE] No se pudo planificar para instrumentación:', { name: error && error.name });
+        return null;
+    }
+}
+
+/**
  * Devuelve el texto de contexto pedagógico para AÑADIR al system prompt.
  * Vacío si el agente está desactivado o falla.
  */
@@ -126,6 +152,7 @@ module.exports = {
     agenteHabilitado,
     persistenciaHabilitada,
     planificarSeguro,
+    planInstrumentacion,
     construirContextoPedagogico,
     registrarTurno
 };

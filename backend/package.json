@@ -9,7 +9,8 @@
     "test": "node test/run-tests.js",
     "test:direct": "node test/run-tests.js",
     "serve-web": "node serve-web.js",
-    "prod": "node scripts/start-prod.js"
+    "prod": "node scripts/start-prod.js",
+    "seed:teacher": "node scripts/seed-dev-teacher.js"
   },
   "engines": {
     "node": ">=18.0.0",

@@ -6,6 +6,7 @@
 const aiService = require('../services/ai.service');
 const moderationService = require('../services/moderation.service');
 const tutorIntegration = require('../services/tutor.integration');
+const analyticsService = require('../services/analytics.service');
 const { query } = require('../config/database');
 const { AppError, catchAsync } = require('../middleware/error.middleware');
 const Joi = require('joi');
@@ -171,6 +172,45 @@ exports.sendMessage = catchAsync(async (req, res) => {
         model: aiResponse.model,
         fallbackFrom: aiResponse.fallback ? aiResponse.fallback.from : null
     });
+
+    // ANALÍTICA DE APRENDIZAJE (panel docente).
+    // Se registra un evento estructurado por turno pedagógico, con el tema
+    // clasificado por reglas reproducibles y el desenlace observado.
+    //
+    // Se usa planInstrumentacion() y NO aiResponse.agentPlan porque este último
+    // solo existe con AGENT_ENABLED=true. La analítica debe funcionar sin
+    // cambiar el prompt que recibe el estudiante: el plan se calcula aquí solo
+    // para clasificar el turno.
+    //
+    // Independiente de AGENT_PERSISTENCE_ENABLED: esa bandera controla las
+    // tablas del agente (agent_evidence); learning_events es la fuente de
+    // verdad del panel docente.
+    //
+    // Tolerante a fallos: registrarEvento nunca lanza. Si la migración
+    // migration_teacher_panel.sql no está aplicada, no se escribe nada y el
+    // estudiante recibe su respuesta con normalidad.
+    if (analyticsService) {
+        const planAnalitica = tutorIntegration.planInstrumentacion({
+            message, subject, mode, history
+        });
+        if (planAnalitica) {
+            const grupoId = await analyticsService.grupoDelEstudiante(query, userId);
+            await analyticsService.registrarEvento(query, {
+                userId,
+                groupId: grupoId,
+                conversationId: currentConversationId,
+                subject,
+                message,
+                plan: planAnalitica,
+                mode,
+                provider: aiResponse.fallback ? aiResponse.fallback.to : undefined,
+                model: aiResponse.model,
+                fallbackFrom: aiResponse.fallback ? aiResponse.fallback.from : null,
+                durationMs: aiResponse.duration,
+                activityType: mode === 'icfes' ? 'icfes' : (mode === 'quiz' ? 'quiz' : 'chat')
+            });
+        }
+    }
 
     // Responder
     res.json({

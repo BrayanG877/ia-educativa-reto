@@ -40,8 +40,10 @@ Secuencia de arranque:
 | `cache.service.js` | Caché de respuestas en Redis. |
 | `moderation.service.js` | Filtrado de contenido no educativo. |
 | `prompt.service.js` | Construcción de prompts socráticos y de contexto. |
+| `learning.classifier.js` | Clasificación **reproducible** (reglas, no LLM) de tema y desenlace pedagógico. |
+| `analytics.service.js` | Única puerta de escritura de `learning_events` y de lectura de la analítica del panel. |
 | `tutor.agent.js` | Plan pedagógico: diagnóstico, enseñanza, práctica y evaluación. |
-| `tutor.integration.js` | Puente opcional entre el agente y el flujo de chat, con las banderas `AGENT_ENABLED` / `AGENT_PERSISTENCE_ENABLED`. |
+| `tutor.integration.js` | Puente entre el agente y el chat. Incluye `planInstrumentacion()`, que calcula el plan para analítica sin depender de `AGENT_ENABLED`. |
 
 ### 1.4 Selección y respaldo de proveedores
 
@@ -108,12 +110,25 @@ Base: `/api`. Autenticación por `Authorization: Bearer <JWT>`.
 | GET | `/cache` | Sí + rol `admin` |
 
 ### Diagnóstico
-
 | Método | Ruta | Descripción |
 |---|---|---|
 | GET | `/health` | Estado de BD, Redis y proveedor de IA. |
 | GET | `/api/ai/providers` | Lista de proveedores con su estado. **No expone claves.** |
+| GET | `/api/auth/subjects` | Catálogo público de asignaturas (fuente única del formulario). |
 | GET | `/` | Sirve el frontend. |
+
+### Panel docente — `/api/teacher`
+
+Ver [`docs/TEACHER_PANEL.md`](TEACHER_PANEL.md). Todas las rutas exigen
+`authenticateToken → loadUserRole → requireRole('teacher')`, y además comprueban
+que exista la asignación (profesor, asignatura, grupo).
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/groups` | Grupos y asignaturas asignados. |
+| GET | `/groups/:groupId/students?subject=` | Estudiantes del grupo. |
+| GET | `/groups/:groupId/stats?subject=&days=` | Analítica agregada. |
+| GET | `/groups/:groupId/students/:studentId?subject=&days=` | Perfil individual. |
 
 ## 3. Persistencia
 
@@ -126,6 +141,7 @@ Motor: **Microsoft SQL Server** (paquete `mssql`).
 | `database/schema.sql` | Esquema de referencia. |
 | `database/migration_teacher_assignment.sql` | Asignación profesor–estudiante. |
 | `database/migration_agent.sql` | Tablas `agent_evidence` y `agent_difficulties`. |
+| `database/migration_teacher_panel.sql` | `class_groups`, `teacher_assignments`, `group_enrollments`, `learning_events`, `curriculum_topics` y `users.primary_subject`. Base del panel docente. |
 
 ## 4. Frontend
 
@@ -137,7 +153,9 @@ Motor: **Microsoft SQL Server** (paquete `mssql`).
 | `login.html`, `register.html` | Autenticación. |
 | `app.js` | Lógica de la interfaz. |
 | `api-client.js` | Cliente HTTP y gestión del token. |
-| `styles.css` | Estilos. |
+| `styles.css` | Estilos de la interfaz del estudiante. |
+| `markdown.js` | Renderizador Markdown **seguro** de las respuestas del tutor. |
+| `teacher.html` / `teacher.js` / `teacher.css` | Panel docente. |
 | `diagnostico.html`, `test-connection.html`, `fix-cache.html` | Utilidades de diagnóstico en el navegador. |
 
 En producción (`NODE_ENV=production`) el backend sirve `web/` como estático desde

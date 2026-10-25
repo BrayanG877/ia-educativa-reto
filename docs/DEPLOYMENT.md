@@ -53,7 +53,12 @@ backend/database/00_crear_base_datos.sql
 backend/database/schema_sqlserver.sql
 backend/database/migration_teacher_assignment.sql
 backend/database/migration_agent.sql            # solo si AGENT_ENABLED=true
+backend/database/migration_teacher_panel.sql    # panel docente (obligatoria)
 ```
+
+`migration_teacher_panel.sql` es idempotente y **solo crea estructuras nuevas**:
+no altera ni borra datos existentes. Sin ella, el panel responde `403` en todas
+las rutas (fail-closed) y el chat sigue funcionando sin registrar analítica.
 
 Las migraciones son manuales y **no** se ejecutan automáticamente al arrancar.
 Aplícalas con `sqlcmd` o con un cliente SQL, y verifica el resultado antes de
@@ -114,3 +119,7 @@ archivos de log dentro del repositorio.
 3. Rotar cualquier credencial que haya estado expuesta en el historial de Git.
 4. Restringir el acceso de red a SQL Server y Redis al servidor de aplicación.
 5. Revisar `/api/ai/providers` solo desde redes de confianza.
+6. `TEACHER_SELF_REGISTRATION` debe permanecer en `false`; el rol docente se
+   aprovisiona y la asignación a grupos es explícita en `teacher_assignments`.
+7. No ejecutar `scripts/seed-dev-teacher.js` contra producción: el script se
+   niega con `NODE_ENV=production`, pero verifica el entorno antes de lanzarlo.

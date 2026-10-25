@@ -187,12 +187,22 @@ class AuthManager {
      * Registrar un nuevo usuario. El backend devuelve los mismos campos planos
      * que el login, así que se guarda igual y el usuario queda autenticado.
      */
-    async register({ email, password, username, fullName, gradeLevel, institution }) {
+    async register({ email, password, username, fullName, gradeLevel, institution, role, subject }) {
         try {
+            // El backend acepta role='student'|'teacher'. 'teacher' además
+            // valida la asignatura contra el catálogo real y puede requerir
+            // aprobación (TEACHER_SELF_REGISTRATION). El cliente solo envia
+            // los campos que el formulario permite elegir.
+            const payload = { email, password, username, fullName, gradeLevel, institution };
+            if (role === 'teacher') {
+                payload.role = 'teacher';
+                payload.subject = subject;
+            }
+
             const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.REGISTER}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, username, fullName, gradeLevel, institution })
+                body: JSON.stringify(payload)
             });
 
             // Misma lectura segura que en login: un 502 del proxy responde HTML
@@ -210,7 +220,8 @@ class AuthManager {
                     email: data.data.email,
                     username: data.data.username,
                     fullName: data.data.fullName,
-                    role: 'student'
+                    // El rol viene del backend, no se asume.
+                    role: data.data.role || (role === 'teacher' ? 'teacher' : 'student')
                 };
                 localStorage.setItem('auth_token', this.token);
                 localStorage.setItem('user', JSON.stringify(this.user));
@@ -222,6 +233,62 @@ class AuthManager {
             console.error('Error en registro:', error);
             return { success: false, message: 'Error de conexión con el servidor' };
         }
+    }
+
+    // ===================================
+    // PANEL DOCENTE (rol teacher)
+    // Todas las rutas exigen JWT + rol teacher en el backend.
+    // ===================================
+
+    /** Petición GET autenticada con lectura segura de errores. */
+    async _getAuth(path) {
+        try {
+            const response = await fetch(`${API_CONFIG.BASE_URL}${path}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(this.token ? { Authorization: `Bearer ${this.token}` } : {})
+                }
+            });
+            const parsed = await parseJsonResponse(response);
+            if (parsed.error) {
+                return { success: false, message: parsed.error, status: response.status };
+            }
+            const data = parsed.data;
+            if (!data.success) {
+                return { success: false, message: data.message || 'Error al consultar el panel', status: response.status };
+            }
+            return { success: true, data: data.data, status: response.status };
+        } catch (error) {
+            console.error('Error en petición docente:', error);
+            return { success: false, message: 'Error de conexión con el servidor' };
+        }
+    }
+
+    /** Grupos y asignaturas asignados al profesor autenticado. */
+    async getTeacherGroups() {
+        return this._getAuth('/api/teacher/groups');
+    }
+
+    /** Estudiantes inscritos en un grupo autorizado. */
+    async getGroupStudents(groupId, subject) {
+        return this._getAuth(
+            `/api/teacher/groups/${encodeURIComponent(groupId)}/students?subject=${encodeURIComponent(subject)}`
+        );
+    }
+
+    /** Estadísticas agregadas del grupo (período en días). */
+    async getGroupStats(groupId, subject, days = 30) {
+        return this._getAuth(
+            `/api/teacher/groups/${encodeURIComponent(groupId)}/stats?subject=${encodeURIComponent(subject)}&days=${encodeURIComponent(days)}`
+        );
+    }
+
+    /** Perfil de aprendizaje individual. */
+    async getStudentProfile(groupId, studentId, subject, days = 90) {
+        return this._getAuth(
+            `/api/teacher/groups/${encodeURIComponent(groupId)}/students/${encodeURIComponent(studentId)}?subject=${encodeURIComponent(subject)}&days=${encodeURIComponent(days)}`
+        );
     }
 
     /**

@@ -83,41 +83,89 @@ body {
     line-height: 1.5;
 }
 
+/* ------------------------------------------------------------------
+   MENSAJE DEL ESTUDIANTE -> burbuja compacta a la derecha.
+   Su texto es plano (no se interpreta Markdown).
+   ------------------------------------------------------------------ */
 .message.user {
     background: linear-gradient(135deg, #2d2d2d 0%, #1f1f1f 100%);
     color: var(--text);
     align-self: flex-end;
     margin-left: auto;
     border: 1px solid rgba(255,255,255,0.06);
+    padding: 12px 16px;
+    border-radius: 18px 18px 4px 18px;
+    max-width: min(85%, 720px);
 }
 
+/* ------------------------------------------------------------------
+   RESPUESTA DEL TUTOR -> SIN contenedor visual.
+
+   El contenido se presenta directo sobre el fondo de la conversación,
+   con jerarquía tipográfica (títulos, listas, citas, código) en lugar de
+   un recuadro. Se conserva la alineación a la izquierda y una sangría
+   ligera para distinguirla del mensaje del estudiante sin encerrarla.
+
+   NO se elimina contenido, historial ni lógica: solo el marco.
+   ------------------------------------------------------------------ */
 .message.assistant {
-    background: linear-gradient(135deg, #242424 0%, #1a1a1a 100%);
+    background: transparent;
+    border: none;
+    box-shadow: none;
     color: var(--text);
     align-self: flex-start;
-    border: 1px solid rgba(255,255,255,0.04);
+    margin-left: 0;
+    padding: 4px 0 4px 18px;
+    border-left: 3px solid rgba(99, 179, 237, 0.35);
+    border-radius: 0;
+    max-width: min(92%, 820px);
+    font-size: 1rem;
+    line-height: 1.75;
 }
 
-/* Indicador de escritura */
+/* Separación entre turnos de la conversación */
+.message.assistant + .message.assistant {
+    margin-top: 4px;
+}
+.message.user + .message.assistant {
+    margin-top: 10px;
+}
+
+/* Indicador de escritura (estado de carga accesible) */
 .message.typing {
-    background: linear-gradient(135deg, #242424 0%, #1a1a1a 100%);
+    background: transparent;
+    border: none;
+    border-left: 3px solid rgba(99, 179, 237, 0.25);
     color: var(--text-secondary);
     align-self: flex-start;
-    border: 1px solid rgba(255,255,255,0.04);
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-style: italic;
+    gap: 10px;
+    font-size: 0.92rem;
+    padding: 6px 0 6px 18px;
+    max-width: 92%;
 }
 
 .message.typing .dots {
-    animation: blink 1.4s infinite;
+    display: inline-flex;
+    gap: 4px;
 }
 
-@keyframes blink {
-    0%, 20% { opacity: 0.2; }
-    40% { opacity: 1; }
-    100% { opacity: 0.2; }
+.message.typing .dots i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary);
+    opacity: 0.35;
+    animation: dotPulse 1.2s infinite ease-in-out;
+}
+
+.message.typing .dots i:nth-child(2) { animation-delay: 0.15s; }
+.message.typing .dots i:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes dotPulse {
+    0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+    40%           { opacity: 1;    transform: translateY(-3px); }
 }
 
 .message.system {
@@ -130,49 +178,182 @@ body {
     max-width: 95%;
 }
 
-/* Formato de mensajes */
-.message h1 {
-    font-size: 1.5em;
-    margin: 0.5em 0;
+/* ==================================================================
+   TIPOGRAFÍA DE LAS RESPUESTAS DEL TUTOR (Markdown renderizado)
+   Generado por web/markdown.js con clases .md-*
+   ================================================================== */
+
+.message .md-h1 {
+    font-size: 1.42rem;
+    line-height: 1.3;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 1.1em 0 0.5em;
     color: var(--primary);
 }
+.message .md-h1:first-child { margin-top: 0; }
 
-.message h2 {
-    font-size: 1.3em;
-    margin: 0.4em 0;
+.message .md-h2 {
+    font-size: 1.2rem;
+    line-height: 1.35;
+    font-weight: 650;
+    margin: 1.15em 0 0.45em;
+    color: var(--text);
+}
+.message .md-h2:first-child { margin-top: 0; }
+
+.message .md-h3 {
+    font-size: 1.06rem;
+    font-weight: 600;
+    margin: 1em 0 0.4em;
     color: var(--text);
 }
 
-.message h3 {
-    font-size: 1.1em;
-    margin: 0.3em 0;
-    color: var(--text);
+.message .md-h4 {
+    font-size: 0.98rem;
+    font-weight: 600;
+    margin: 0.9em 0 0.35em;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
-.message code {
-    background: rgba(255,255,255,0.05);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
-    font-size: 0.9em;
+.message .md-p {
+    margin: 0 0 0.85em;
 }
-
-.message pre {
-    background: rgba(0,0,0,0.3);
-    padding: 12px;
-    border-radius: 8px;
-    overflow-x: auto;
-    margin: 8px 0;
-}
-
-.message pre code {
-    background: none;
-    padding: 0;
-}
+.message .md-p:last-child { margin-bottom: 0; }
 
 .message strong {
-    font-weight: 600;
+    font-weight: 650;
+    color: var(--text);
+}
+
+.message em { font-style: italic; }
+.message del { opacity: 0.65; }
+
+.message .md-list {
+    margin: 0.35em 0 0.95em;
+    padding-left: 1.5em;
+}
+.message .md-list li {
+    margin: 0.35em 0;
+    padding-left: 0.15em;
+}
+.message .md-list li::marker {
     color: var(--primary);
+    font-weight: 600;
+}
+.message .md-list ol, .message .md-list ul { margin: 0.3em 0 0.3em; }
+
+.message code {
+    background: rgba(99, 179, 237, 0.12);
+    color: #8fd0ff;
+    padding: 0.12em 0.4em;
+    border-radius: 5px;
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace;
+    font-size: 0.88em;
+}
+
+.message .md-code-block {
+    background: rgba(0,0,0,0.38);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    margin: 0.8em 0 1em;
+    line-height: 1.55;
+}
+
+.message .md-code-block code {
+    background: none;
+    color: #d6e4f0;
+    padding: 0;
+    font-size: 0.86rem;
+}
+
+/* Fórmulas y expresiones matemáticas */
+.message .md-formula {
+    background: rgba(99, 179, 237, 0.07);
+    border-left: 3px solid rgba(99, 179, 237, 0.5);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin: 0.8em 0;
+    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
+    font-size: 0.94rem;
+    overflow-x: auto;
+    color: #cfe6ff;
+}
+
+/* Citas: ideales para ideas clave, notas y advertencias */
+.message .md-quote {
+    margin: 0.9em 0;
+    padding: 0.55em 1em;
+    border-left: 3px solid rgba(255, 193, 94, 0.55);
+    background: rgba(255, 193, 94, 0.06);
+    border-radius: 0 8px 8px 0;
+    color: var(--text);
+}
+
+.message .md-hr {
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    margin: 1.4em 0;
+}
+
+/* Tablas del modelo */
+.message .md-table-wrap {
+    overflow-x: auto;
+    margin: 0.9em 0 1em;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.message .md-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.92rem;
+}
+
+.message .md-table th,
+.message .md-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    text-align: left;
+    vertical-align: top;
+}
+
+.message .md-table th {
+    background: rgba(99, 179, 237, 0.1);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.message .md-table tr:last-child td { border-bottom: none; }
+
+/* Enlaces permitidos (solo http/https/mailto) */
+.message a {
+    color: var(--primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.message a:hover { opacity: 0.85; }
+.message a:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 3px;
+}
+
+/* Pantallas pequeñas: tipografía legible sin desbordes */
+@media (max-width: 640px) {
+    .message.assistant {
+        max-width: 100%;
+        padding-left: 12px;
+        line-height: 1.68;
+    }
+    .message.user { max-width: 92%; }
+    .message .md-h1 { font-size: 1.22rem; }
+    .message .md-h2 { font-size: 1.1rem; }
+    .message .md-code-block { padding: 10px 12px; }
 }
 
 @keyframes fadeIn {
@@ -984,4 +1165,208 @@ body {
 @media (max-width: 640px) {
     .topbar-btn span:last-child:not(:first-child) { display: none; }
     .topbar-user .user-name { display: none; }
+}
+
+/* ==================================================================
+   FASE 8 — INTERACCIONES Y ANIMACIONES
+   Reglas: sutiles, rápidas (<250 ms), nunca bloquean la acción y
+   respetan prefers-reduced-motion (bloque al final del archivo).
+   ================================================================== */
+
+/* --- Tarjetas de materias (grid) ----------------------------------- */
+.subjects-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 10px;
+}
+
+.subjects-grid .subject-item {
+    margin: 0;
+}
+
+.subjects-grid .subject-button {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.94rem;
+    line-height: 1.35;
+    transition:
+        transform 140ms ease,
+        box-shadow 180ms ease,
+        border-color 180ms ease,
+        background-color 180ms ease;
+}
+
+.subjects-grid .subject-emoji {
+    font-size: 1.25rem;
+    line-height: 1;
+    flex: 0 0 auto;
+    transition: transform 180ms ease;
+}
+
+.subjects-grid .subject-name {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* Retroalimentación al pasar el cursor (solo dispositivos con hover) */
+@media (hover: hover) {
+    .subjects-grid .subject-button:hover {
+        background: rgba(99, 179, 237, 0.09);
+        border-color: rgba(99, 179, 237, 0.35);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+    }
+    .subjects-grid .subject-button:hover .subject-emoji {
+        transform: scale(1.12);
+    }
+}
+
+/* Al pulsar: retorno inmediato, sin retrasar la acción */
+.subjects-grid .subject-button:active {
+    transform: translateY(0) scale(0.985);
+    box-shadow: none;
+}
+
+/* Foco visible por teclado */
+.subjects-grid .subject-button:focus-visible,
+.message a:focus-visible,
+button:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Materia activa */
+.subjects-grid .subject-button[aria-pressed="true"] {
+    background: rgba(99, 179, 237, 0.14);
+    border-color: rgba(99, 179, 237, 0.55);
+}
+
+.section-hint {
+    margin: -4px 0 10px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* --- Menú "+" / menú de opciones ----------------------------------- */
+/* Apertura breve: opacidad + escala mínima. Sin desplazamientos largos. */
+.options-menu:not(.hidden) .options-menu-content {
+    animation: menuPop 160ms cubic-bezier(0.2, 0.8, 0.3, 1);
+    transform-origin: top center;
+}
+
+.options-menu.hidden .options-menu-content {
+    animation: none;
+}
+
+@keyframes menuPop {
+    from {
+        opacity: 0;
+        transform: scale(0.97) translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Botón "+": realimentación de pulsación sin efecto permanente */
+.options-button,
+#optionsButton,
+.btn-options {
+    transition: transform 140ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.options-button:active,
+#optionsButton:active,
+.btn-options:active {
+    transform: scale(0.94);
+}
+
+.options-button[aria-expanded="true"],
+#optionsButton[aria-expanded="true"],
+.btn-options[aria-expanded="true"] {
+    background: rgba(99, 179, 237, 0.18);
+    box-shadow: inset 0 0 0 1px rgba(99, 179, 237, 0.45);
+}
+
+/* --- Botones y tarjetas de herramientas ---------------------------- */
+.tool-item .tool-button,
+.tool-item button {
+    transition:
+        transform 140ms ease,
+        box-shadow 180ms ease,
+        border-color 180ms ease,
+        background-color 180ms ease;
+}
+
+@media (hover: hover) {
+    .tool-item .tool-button:hover,
+    .tool-item button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    }
+}
+
+.tool-item .tool-button:active,
+.tool-item button:active {
+    transform: scale(0.98);
+}
+
+/* --- Aparición de mensajes ---------------------------------------- */
+/* fadeIn ya existe en el archivo; se refina para no mover el layout. */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.message {
+    animation: fadeInUp 200ms ease both;
+}
+
+/* --- Transiciones entre secciones --------------------------------- */
+.panel-enter {
+    animation: fadeInUp 220ms ease both;
+}
+
+/* ==================================================================
+   ACCESIBILIDAD — MOVIMIENTO REDUCIDO
+   Si el usuario prefiere menos movimiento, se eliminan animaciones y
+   transiciones visuales. La funcionalidad NO cambia.
+   ================================================================== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .message,
+    .options-menu:not(.hidden) .options-menu-content,
+    .panel-enter {
+        animation: none !important;
+    }
+
+    @media (hover: hover) {
+        .subjects-grid .subject-button:hover,
+        .tool-item .tool-button:hover,
+        .tool-item button:hover {
+            transform: none !important;
+        }
+    }
 }

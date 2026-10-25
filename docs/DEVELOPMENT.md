@@ -76,6 +76,9 @@ IA externos**, aunque el `.env` local tenga credenciales válidas.
 | `ai.icfes-errors.test.js` | Manejo de errores en generación ICFES. |
 | `ai.packaging-exclusions.test.js` | Que el paquete de despliegue excluya lo que debe. |
 | `metrics.authorization.test.js` | Autorización de métricas por rol e identidad. |
+| `teacher.panel.test.js` | Panel docente: rol, autorización por grupo/asignatura, IDOR, validación de parámetros, cálculo de estadísticas y datos insuficientes. |
+| `analytics.classifier.test.js` | Clasificación reproducible de tema y desenlace, y registro real de eventos. |
+| `markdown.renderer.test.js` | Renderizador Markdown: seguridad (XSS) y formato (listas, tablas, código, fórmulas). |
 
 ## 4. Verificación manual del backend
 
@@ -94,7 +97,22 @@ curl http://localhost:3001/api/ai/providers
 `/health` responde `200` incluso en modo degradado; el campo `status` indica
 `OK` o `DEGRADED` y `dependencies` detalla BD, Redis y proveedor de IA.
 
-## 5. Convenciones
+## 5. Datos de desarrollo
+```bash
+cd backend
+npm run seed:teacher            # cuenta docente + grupo + eventos sintéticos
+npm run seed:teacher --reset    # regenera SOLO los datos demo (is_demo = 1)
+```
+
+Requiere `backend/database/migration_teacher_panel.sql` aplicada. El script:
+
+- se niega a ejecutarse con `NODE_ENV=production`;
+- es **idempotente** (comprueba existencia antes de insertar);
+- guarda la contraseña con **bcrypt**, igual que el registro real;
+- no asigna roles administrativos;
+- usa nombres ficticios y marca todos los registros con `is_demo = 1`.
+
+## 7. Convenciones
 
 - CommonJS (`require`/`module.exports`); no hay transpilación ni build.
 - No añadir dependencias sin justificar su necesidad.
@@ -102,7 +120,7 @@ curl http://localhost:3001/api/ai/providers
 - No imprimir valores de credenciales en logs, mensajes de error ni respuestas.
 - Los scripts de arranque usan `process.exit` explícito para un código de salida correcto.
 
-## 6. Qué NO hacer en local
+## 8. Qué NO hacer en local
 
 - No ejecutar scripts que escriban en producción (base de datos, Redis, cloud).
 - No consumir cuota de proveedores de IA en pruebas automáticas.

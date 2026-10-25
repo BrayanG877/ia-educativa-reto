@@ -107,7 +107,17 @@ function selectSubject(subject, displayName) {
     // Actualizar indicador visual
     elements.indicatorText.textContent = `Modo: ${displayName}`;
     elements.subjectIndicator.classList.remove('hidden');
-        updateModeIndicator();
+    updateModeIndicator();
+
+    // Estado accesible de las tarjetas de materias: aria-pressed refleja la
+    // selección real para lectores de pantalla (y activa el estilo de la
+    // materia elegida). NO se oculta ninguna opción.
+    document.querySelectorAll('.subject-item').forEach(item => {
+        const btn = item.querySelector('.subject-button');
+        if (!btn) return;
+        const esActiva = item.dataset.subject === subject;
+        btn.setAttribute('aria-pressed', esActiva ? 'true' : 'false');
+    });
 
     // Cerrar menú
     closeOptionsMenu();
@@ -543,34 +553,26 @@ function escapeHtml(text) {
 
 function displayMessage(message) {
     const messageElement = document.createElement('div');
+    const esAsistente = message.sender === 'assistant';
     messageElement.className = `message ${message.sender}`;
 
-    // Escapar HTML ANTES de aplicar el markdown. Sin esto, el texto entraba
-    // directo a innerHTML y un mensaje como <img src=x onerror=...> se
-    // ejecutaba en el navegador del estudiante.
-    let htmlContent = escapeHtml(message.text);
-
-    // Headers
-    htmlContent = htmlContent.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-    htmlContent = htmlContent.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-    htmlContent = htmlContent.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-
-    // Bold
-    htmlContent = htmlContent.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-    // Code blocks
-    htmlContent = htmlContent.replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>');
-
-    // Inline code
-    htmlContent = htmlContent.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-    // Line breaks
-    htmlContent = htmlContent.replace(/\n/g, '<br>');
-
-    // Tables (básico)
-    htmlContent = htmlContent.replace(/\|(.+)\|/g, '<div class="table-row">$1</div>');
-
-    messageElement.innerHTML = htmlContent;
+    // El mensaje del estudiante es texto plano; el del tutor es Markdown.
+    // En AMBOS casos el render escapa el HTML antes de interpretar nada:
+    // `Markdown.safeRender` escapa primero y solo genera elementos de una
+    // lista blanca (h1-h4, p, ul, ol, li, strong, em, code, pre, table...).
+    // Un <img src=x onerror=...> o un enlace javascript: quedan inertes.
+    //
+    // Antes esta función aplicaba <br> a cada salto ANTES de procesar listas,
+    // lo que deformaba el Markdown real del modelo (listas sin viñeta,
+    // tablas falsas generadas por cualquier línea con barras).
+    if (typeof Markdown !== 'undefined' && Markdown.safeRender) {
+        messageElement.innerHTML = esAsistente
+            ? Markdown.safeRender(message.text)
+            : Markdown.plainRender(message.text);
+    } else {
+        // Fallback defensivo si markdown.js no cargó: texto plano escapado.
+        messageElement.textContent = String(message.text ?? '');
+    }
 
     elements.messagesContainer.appendChild(messageElement);
 
@@ -585,7 +587,10 @@ function showTypingIndicator() {
     const typingDiv = document.createElement('div');
     typingDiv.className = 'message assistant typing';
     typingDiv.id = 'typingIndicator';
-    typingDiv.innerHTML = '<span>Claude está escribiendo</span> <span class="dots">...</span>';
+    typingDiv.setAttribute('role', 'status');
+    typingDiv.setAttribute('aria-live', 'polite');
+    typingDiv.innerHTML = '<span class="typing-label">El tutor está pensando</span>' +
+        '<span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>';
     elements.messagesContainer.appendChild(typingDiv);
     elements.messagesArea.scrollTop = elements.messagesArea.scrollHeight;
 }
@@ -720,7 +725,10 @@ function initializeEventListeners() {
         button.addEventListener('click', (event) => {
             const subjectItem = event.target.closest('.subject-item');
             const subjectId = subjectItem.dataset.subject;
-            const subjectName = button.textContent.trim();
+            // El botón contiene emoji + nombre: se toma solo el texto del nombre
+            // para no mostrar el emoji en el indicador de modo.
+            const nombreVisible = button.querySelector('.subject-name');
+            const subjectName = (nombreVisible ? nombreVisible.textContent : button.textContent).trim();
 
             selectSubject(subjectId, subjectName);
         });

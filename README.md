@@ -193,22 +193,47 @@ AGENT_PERSISTENCE_ENABLED=false  # escribe evidencias en SQL Server
 La persistencia solo tiene efecto si además hay plan, y solo tras aplicar
 `backend/database/migration_agent.sql`.
 
-## 9. Documentación adicional
+## 9. Rol docente y panel de aprendizaje
+El profesor accede a `teacher.html` y consulta únicamente sus grupos asignados:
+estadísticas del curso, temas que requieren refuerzo, alertas pedagógicas y el
+perfil académico individual de cada estudiante.
 
+**Activación** (ver [`docs/TEACHER_PANEL.md`](docs/TEACHER_PANEL.md)):
+
+```bash
+sqlcmd -S <servidor> -d <base> -i backend/database/migration_teacher_panel.sql
+cd backend && npm run seed:teacher      # cuenta + datos demo (solo desarrollo)
+```
+
+El registro como profesor requiere aprovisionamiento: `TEACHER_SELF_REGISTRATION`
+debe ser `true` para permitir el auto-registro, y **registrarse no concede acceso
+a ningún grupo**. La asignación (profesor, asignatura, grupo) es un acto
+administrativo explícito en `teacher_assignments`.
+
+Las estadísticas se calculan en el servidor a partir de `learning_events`,
+registrados por el agente en cada turno pedagógico. Cuando no hay evidencia
+suficiente la API responde `status: 'insuficientes'` en lugar de mostrar cifras
+engañosas.
+
+## 10. Documentación adicional
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — módulos, servicios y contratos.
+- [`docs/TEACHER_PANEL.md`](docs/TEACHER_PANEL.md) — panel docente y analítica.
 - [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — desarrollo, pruebas y convenciones.
 - [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) — variables y proveedores de IA.
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — despliegue y operación.
 - [`web/README.md`](web/README.md) — detalle de la interfaz.
 
-## 10. Seguridad
-
+## 11. Seguridad
 - `backend/.env` y `backend/.env.production` están en `.gitignore`: **nunca** se versionan.
 - Usa `backend/.env.example` y `backend/.env.production.example` como plantilla.
 - No incluyas claves en documentación, scripts ni commits.
 - Si una credencial se expuso alguna vez en el historial, **rótala**: borrarla de
   un commit no la elimina de los commits anteriores.
+- La autorización del panel docente se decide **siempre en el backend**
+  (asignación profesor–asignatura–grupo), nunca ocultando botones.
+- Las respuestas del modelo se escapan antes de interpretar Markdown
+  (`web/markdown.js`): solo se aceptan enlaces `http`/`https`/`mailto`.
 
-## 11. Licencia
+## 12. Licencia
 
 Proyecto educativo. Licencia MIT (ver `package.json`).
