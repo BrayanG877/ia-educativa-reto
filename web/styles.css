@@ -18,6 +18,144 @@
     --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.2);
     --border-radius: 8px;
     --transition: all 0.3s ease;
+
+    /* ==================================================================
+       SISTEMA VISUAL (rediseño de la interfaz del estudiante)
+       Colores, radios, sombras, transiciones, espaciado, tipografía y
+       estados, en un solo lugar. El tema por defecto es oscuro (estilo
+       Gemini) y hay variante clara más abajo.
+       ================================================================== */
+
+    /* --- Marca y acentos --- */
+    --ui-primary: #63b3ed;          /* azul claro de referencia */
+    --ui-primary-strong: #3b9bdc;
+    --ui-primary-soft: rgba(99, 179, 237, 0.14);
+    --ui-primary-ring: rgba(99, 179, 237, 0.38);
+    --ui-violet: #a78bfa;
+    --ui-turquoise: #2dd4bf;
+    --ui-coral: #fb923c;
+    --ui-amber: #fbbf24;
+    --ui-indigo: #818cf8;
+    --ui-success: #4ade80;
+    --ui-danger: #f87171;
+
+    /* --- Superficies --- */
+    --ui-surface: rgba(255, 255, 255, 0.045);
+    --ui-surface-strong: rgba(255, 255, 255, 0.075);
+    --ui-page-glow-1: rgba(99, 179, 237, 0.10);
+    --ui-page-glow-2: rgba(167, 139, 250, 0.10);
+    --ui-page-glow-3: rgba(45, 212, 191, 0.07);
+    --ui-hairline: rgba(255, 255, 255, 0.08);
+    --ui-hairline-soft: rgba(255, 255, 255, 0.05);
+    --ui-on-tint: #ffffff;
+
+    /* --- Radios --- */
+    --ui-radius-sm: 10px;
+    --ui-radius-md: 14px;
+    --ui-radius-lg: 20px;
+    --ui-radius-xl: 28px;
+    --ui-radius-pill: 999px;
+
+    /* --- Sombras --- */
+    --ui-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.18);
+    --ui-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.22);
+    --ui-shadow-md: 0 10px 28px rgba(0, 0, 0, 0.30);
+    --ui-shadow-lg: 0 22px 60px rgba(0, 0, 0, 0.45);
+    --ui-shadow-focus: 0 0 0 3px var(--ui-primary-soft), 0 10px 30px rgba(0, 0, 0, 0.35);
+
+    /* --- Transiciones --- */
+    --ui-ease: cubic-bezier(0.22, 0.8, 0.28, 1);
+    --ui-fast: 140ms;
+    --ui-med: 220ms;
+    --ui-slow: 380ms;
+
+    /* --- Espaciado --- */
+    --ui-space-1: 4px;
+    --ui-space-2: 8px;
+    --ui-space-3: 12px;
+    --ui-space-4: 16px;
+    --ui-space-5: 20px;
+    --ui-space-6: 24px;
+    --ui-space-8: 32px;
+
+    /* --- Tipografía ---
+       Sans-serif del sistema: sin descargas, sin latencia y con la fuente
+       nativa de cada SO (Segoe UI en Windows, SF en macOS, Roboto en
+       Android, Cantarell en Linux). Cuando la primera no existe, el
+       navegador usa la siguiente de la lista. */
+    --ui-font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --ui-font-reading: var(--ui-font-sans);
+    --ui-font-mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+    --ui-font-xs: 0.75rem;
+    --ui-font-sm: 0.85rem;
+    --ui-font-base: 1rem;
+    --ui-font-lg: 1.075rem;
+    --ui-leading: 1.7;
+
+    /* --- Colores de las materias ---
+       El color identifica la tarjeta (borde, halo, icono); el texto NO va
+       sobre el color saturado, así se mantiene legible en ambos temas. */
+    --mat-matematicas: #60a5fa;
+    --mat-matematicas-deep: #1e40af;
+    --mat-biologia: #4ade80;
+    --mat-biologia-deep: #166534;
+    --mat-fisica: #38bdf8;
+    --mat-fisica-deep: #0c4a6e;
+    --mat-quimica: #2dd4bf;
+    --mat-quimica-deep: #0f766e;
+    --mat-sociales: #fbbf24;
+    --mat-sociales-deep: #92400e;
+    --mat-espanol: #fb923c;
+    --mat-espanol-deep: #9a3412;
+    --mat-filosofia: #c4b5fd;
+    --mat-filosofia-deep: #4c1d95;
+    --mat-informatica: #7dd3fc;
+    --mat-informatica-deep: #075985;
+    --mat-ingles: #a78bfa;
+    --mat-ingles-deep: #4c1d95;
+    --mat-arte: #f0abfc;
+    --mat-arte-deep: #86198f;
+    --mat-educacion-fisica: #86efac;
+    --mat-educacion-fisica-deep: #14532d;
+    --mat-religion: #fcd34d;
+    --mat-religion-deep: #78350f;
+    --mat-icfes: #fbbf24;
+    --mat-icfes-deep: #78350f;
+
+    /* Color de la tarjeta en curso; cada materia lo sobrescribe */
+    --mat-accent: var(--ui-primary);
+    --mat-accent-deep: var(--ui-primary-strong);
+}
+
+/* --- Tema claro: solo si el sistema lo pide ------------------------ */
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg: #f6f8fc;
+        --panel: #ffffff;
+        --panel-2: #f1f4f9;
+        --text: #101828;
+        --muted: #5b6577;
+        --text-secondary: #5b6577;
+        --chip: rgba(255, 255, 255, 0.92);
+        --chip-border: rgba(16, 24, 40, 0.08);
+        --shadow: 0 10px 30px rgba(16, 24, 40, 0.10);
+        --ui-surface: rgba(255, 255, 255, 0.9);
+        --ui-surface-strong: #ffffff;
+        --ui-page-glow-1: rgba(96, 165, 250, 0.22);
+        --ui-page-glow-2: rgba(167, 139, 250, 0.20);
+        --ui-page-glow-3: rgba(45, 212, 191, 0.16);
+        --ui-hairline: rgba(16, 24, 40, 0.10);
+        --ui-hairline-soft: rgba(16, 24, 40, 0.06);
+        --ui-primary: #2b87d0;
+        --ui-primary-strong: #1d6fae;
+        --ui-primary-soft: rgba(43, 135, 208, 0.12);
+        --ui-primary-ring: rgba(43, 135, 208, 0.34);
+        --ui-shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.06);
+        --ui-shadow-sm: 0 4px 14px rgba(16, 24, 40, 0.08);
+        --ui-shadow-md: 0 10px 28px rgba(16, 24, 40, 0.12);
+        --ui-shadow-lg: 0 22px 60px rgba(16, 24, 40, 0.18);
+        --ui-shadow-focus: 0 0 0 3px rgba(43, 135, 208, 0.18), 0 10px 30px rgba(16, 24, 40, 0.12);
+    }
 }
 
 /* Reset y estilos base */
@@ -25,7 +163,7 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: var(--ui-font-sans);
 }
 
 body {
@@ -35,7 +173,29 @@ body {
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    overflow-x: hidden;
+    /* clip (no hidden): evita el desbordamiento horizontal SIN convertir a
+       <body> en contenedor de scroll, que impedía desplazar la página con
+       teclado. */
+    overflow-x: clip;
+}
+
+/* ===================================
+   FONDO AMBIENTAL DEL ESTUDIANTE
+   Tres halos suaves (azul, violeta, turquesa) fijos al viewport. Son
+   decorativos (aria-hidden), no capturan clics y no se animan: soportan
+   ambos temas y no distraen de la lectura.
+   =================================== */
+.page::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+        radial-gradient(60% 45% at 12% -8%, var(--ui-page-glow-1), transparent 70%),
+        radial-gradient(55% 40% at 92% 4%, var(--ui-page-glow-2), transparent 72%),
+        radial-gradient(50% 40% at 50% 112%, var(--ui-page-glow-3), transparent 70%),
+        var(--bg);
 }
 
 /* ===================================
@@ -44,7 +204,7 @@ body {
 
 .page {
     width: 100%;
-    max-width: 840px;
+    max-width: 880px;
     padding: 54px 28px 40px;
     position: relative;
     min-height: 100vh;
@@ -57,7 +217,11 @@ body {
    =================================== */
 
 .messages-area {
-    flex: 1;
+    flex: 1 1 auto;
+    /* Sin min-height:auto, un hijo alto (columna flex) impide que el área se
+       contraiga; el compositor se iba 1500 px por debajo de la pantalla y el
+       chat quedaba inalcanzable en ventanas bajas. */
+    min-height: 0;
     overflow-y: auto;
     margin-bottom: 20px;
     transition: var(--transition);
@@ -88,45 +252,49 @@ body {
    Su texto es plano (no se interpreta Markdown).
    ------------------------------------------------------------------ */
 .message.user {
-    background: linear-gradient(135deg, #2d2d2d 0%, #1f1f1f 100%);
+    background: var(--ui-surface-strong);
     color: var(--text);
     align-self: flex-end;
     margin-left: auto;
-    border: 1px solid rgba(255,255,255,0.06);
+    border: 1px solid var(--ui-hairline);
     padding: 12px 16px;
     border-radius: 18px 18px 4px 18px;
     max-width: min(85%, 720px);
+    font-family: var(--ui-font-sans);
+    font-size: 0.98rem;
+    line-height: 1.55;
 }
 
 /* ------------------------------------------------------------------
-   RESPUESTA DEL TUTOR -> SIN contenedor visual.
+   RESPUESTA DEL TUTOR -> panel discreto, SIN línea lateral.
 
-   El contenido se presenta directo sobre el fondo de la conversación,
-   con jerarquía tipográfica (títulos, listas, citas, código) en lugar de
-   un recuadro. Se conserva la alineación a la izquierda y una sangría
-   ligera para distinguirla del mensaje del estudiante sin encerrarla.
+   Antes había un borde guía vertical (border-left) junto al texto: se
+   elimina por completo. La respuesta se distingue por su propia
+   superficie suave, el ancho de lectura y la separación respecto de la
+   burbuja del estudiante, no por un adorno lateral.
 
-   NO se elimina contenido, historial ni lógica: solo el marco.
+   NO se elimina contenido, historial ni lógica: solo la decoración.
    ------------------------------------------------------------------ */
 .message.assistant {
-    background: transparent;
-    border: none;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-hairline-soft);
     box-shadow: none;
     color: var(--text);
     align-self: flex-start;
     margin-left: 0;
-    padding: 4px 0 4px 20px;
-    /* Borde guía sutil en lugar de un recuadro: separa sin encerrar */
-    border-left: 2px solid rgba(99, 179, 237, 0.22);
-    border-radius: 0;
-    /* Anchura de lectura óptima: ~68 caracteres por línea */
-    max-width: min(92%, 74ch);
-    font-size: 1.0125rem;
-    line-height: 1.78;
+    padding: 18px 22px;
+    border-radius: 6px var(--ui-radius-lg) var(--ui-radius-lg) var(--ui-radius-lg);
+    /* Anchura de lectura óptima: ~72 caracteres por línea en escritorio */
+    max-width: min(100%, 72ch);
+    font-family: var(--ui-font-reading);
+    font-size: var(--ui-font-lg);
+    line-height: var(--ui-leading);
     letter-spacing: 0.001em;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
 }
 
-/* Columna de lectura centrada en pantallas grandes */
+/* Columna de lectura: un poco de aire en pantallas muy anchas */
 @media (min-width: 1100px) {
     .message.assistant {
         margin-left: 4px;
@@ -135,24 +303,25 @@ body {
 
 /* Separación entre turnos de la conversación */
 .message.assistant + .message.assistant {
-    margin-top: 4px;
+    margin-top: 6px;
 }
 .message.user + .message.assistant {
-    margin-top: 10px;
+    margin-top: 14px;
+    margin-bottom: 18px;
 }
 
 /* Indicador de escritura (estado de carga accesible) */
 .message.typing {
     background: transparent;
     border: none;
-    border-left: 3px solid rgba(99, 179, 237, 0.25);
+    box-shadow: none;
     color: var(--text-secondary);
     align-self: flex-start;
     display: flex;
     align-items: center;
     gap: 10px;
     font-size: 0.92rem;
-    padding: 6px 0 6px 18px;
+    padding: 4px 2px;
     max-width: 92%;
 }
 
@@ -194,13 +363,13 @@ body {
    ================================================================== */
 
 .message .md-h1 {
-    font-size: 1.5rem;
-    line-height: 1.28;
-    font-weight: 750;
+    font-size: 1.42rem;
+    line-height: 1.3;
+    font-weight: 700;
     letter-spacing: -0.018em;
-    margin: 1.2em 0 0.55em;
-    padding-bottom: 0.3em;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    margin: 1.15em 0 0.55em;
+    padding-bottom: 0.32em;
+    border-bottom: 1px solid var(--ui-hairline);
     color: var(--text);
 }
 .message .md-h1:first-child { margin-top: 0; }
@@ -237,9 +406,12 @@ body {
 }
 .message .md-p:last-child { margin-bottom: 0; }
 
+/* Negrita claramente distinguible del texto normal (sin depender del blanco
+   puro, que desaparecía en tema claro) */
 .message strong {
     font-weight: 700;
-    color: #ffffff;
+    color: var(--text);
+    -webkit-text-stroke: 0.012em currentColor;
 }
 
 .message em { font-style: italic; }
@@ -353,32 +525,32 @@ body {
     font-size: 0.86rem;
 }
 
-/* Fórmulas y expresiones matemáticas */
+/* Fórmulas: bloque suave, sin barra lateral decorativa */
 .message .md-formula {
-    background: rgba(99, 179, 237, 0.07);
-    border-left: 3px solid rgba(99, 179, 237, 0.5);
-    border-radius: 6px;
-    padding: 10px 14px;
-    margin: 0.8em 0;
-    font-family: ui-monospace, 'SF Mono', Consolas, monospace;
-    font-size: 0.94rem;
+    background: var(--ui-primary-soft);
+    border: 1px solid var(--ui-hairline-soft);
+    border-radius: var(--ui-radius-sm);
+    padding: 12px 14px;
+    margin: 0.9em 0;
+    font-family: var(--ui-font-mono);
+    font-size: 0.95rem;
     overflow-x: auto;
-    color: #cfe6ff;
+    color: var(--text);
 }
 
-/* Citas: ideales para ideas clave, notas y advertencias */
+/* Citas: bloque informativo, la barra forma parte de la cita (blockquote) */
 .message .md-quote {
-    margin: 0.9em 0;
-    padding: 0.55em 1em;
-    border-left: 3px solid rgba(255, 193, 94, 0.55);
-    background: rgba(255, 193, 94, 0.06);
-    border-radius: 0 8px 8px 0;
+    margin: 0.95em 0;
+    padding: 0.65em 1em;
+    border-left: 3px solid var(--ui-amber);
+    background: rgba(251, 191, 36, 0.08);
+    border-radius: 0 var(--ui-radius-sm) var(--ui-radius-sm) 0;
     color: var(--text);
 }
 
 .message .md-hr {
     border: none;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid var(--ui-hairline);
     margin: 1.4em 0;
 }
 
@@ -429,11 +601,12 @@ body {
 @media (max-width: 640px) {
     .message.assistant {
         max-width: 100%;
-        padding-left: 12px;
+        padding: 14px 16px;
+        font-size: 1.02rem;
         line-height: 1.68;
     }
     .message.user { max-width: 92%; }
-    .message .md-h1 { font-size: 1.22rem; }
+    .message .md-h1 { font-size: 1.24rem; }
     .message .md-h2 { font-size: 1.1rem; }
     .message .md-code-block { padding: 10px 12px; }
 }
@@ -463,19 +636,35 @@ body {
 }
 
 .welcome {
-    font-size: 22px;
+    font-size: 21px;
     font-weight: 500;
-    color: var(--text);
-    margin-bottom: 10px;
-    letter-spacing: -0.02em;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    letter-spacing: -0.015em;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.welcome::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ui-primary), var(--ui-violet));
+    box-shadow: 0 0 0 4px var(--ui-primary-soft);
 }
 
 .headline {
-    font-size: clamp(40px, 5vw, 56px);
-    line-height: 1.05;
-    font-weight: 500;
+    font-size: clamp(36px, 5vw, 54px);
+    line-height: 1.06;
+    font-weight: 600;
     margin-bottom: 0;
-    letter-spacing: -0.04em;
+    letter-spacing: -0.035em;
+    background: linear-gradient(120deg, var(--text) 20%, var(--ui-primary) 65%, var(--ui-violet) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
 }
 
 /* ===================================
@@ -484,23 +673,26 @@ body {
 
 .prompt-box {
     width: 100%;
-    min-height: 116px;
-    background: linear-gradient(180deg, #242424 0%, #212121 100%);
-    border: 1px solid transparent;
-    border-radius: 26px;
-    padding: 20px 22px 16px;
-    box-shadow: var(--shadow);
+    min-height: 124px;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-hairline);
+    border-radius: var(--ui-radius-xl);
+    padding: 18px 18px 14px;
+    box-shadow: var(--ui-shadow-md);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    margin-bottom: 24px;
-    transition: border-color 160ms ease, box-shadow 160ms ease;
+    margin-bottom: 26px;
+    transition: border-color var(--ui-med) var(--ui-ease),
+                box-shadow var(--ui-med) var(--ui-ease),
+                background-color var(--ui-med) var(--ui-ease);
 }
 
 /* Estado focus claramente visible en todo el compositor, no solo en el caret */
 .prompt-box:focus-within {
-    border-color: rgba(99, 179, 237, 0.55);
-    box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.14), var(--shadow);
+    border-color: var(--ui-primary);
+    background: var(--ui-surface-strong);
+    box-shadow: var(--ui-shadow-focus);
 }
 
 .prompt-input {
@@ -510,18 +702,19 @@ body {
     outline: none;
     resize: none;
     color: var(--text);
+    font-family: var(--ui-font-sans);
     font-size: 17px;
-    line-height: 1.5;
-    margin-bottom: 14px;
-    font-family: inherit;
-    min-height: 26px;
-    max-height: 144px;
+    line-height: 1.55;
+    margin-bottom: 12px;
+    min-height: 30px;
+    max-height: 160px;
     overflow-y: auto;
+    caret-color: var(--ui-primary);
 }
 
 .prompt-input::placeholder {
-    color: #8a8a8a;
-    opacity: 1;
+    color: var(--muted);
+    opacity: 0.85;
 }
 
 .prompt-input:disabled {
@@ -529,69 +722,119 @@ body {
     cursor: not-allowed;
 }
 
+/* Con un panel abierto, el compositor y los chips quedan por DEBAJO del
+   panel: son solo contenido, no deben interceptar los clics de las
+   tarjetas que el panel está mostrando encima. */
+body.ui-menu-open .prompt-box,
+body.ui-tools-open .prompt-box,
+body.ui-menu-open .chips,
+body.ui-tools-open .chips {
+    position: relative;
+    z-index: 1;
+}
+
 /* Estado de envío: el compositor indica que está trabajando */
 .prompt-box.is-sending {
-    border-color: rgba(99, 179, 237, 0.35);
+    border-color: var(--ui-primary-ring);
 }
 
 .prompt-box.is-sending .prompt-input::placeholder {
-    color: var(--primary);
+    color: var(--ui-primary);
 }
 
 .prompt-actions {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
+    gap: 12px;
+    flex-wrap: nowrap;
 }
 
 .left-actions,
 .right-actions {
     display: flex;
     align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
+    gap: 8px;
+    flex-wrap: nowrap;
 }
 
 /* ===================================
-   BOTONES
+   BOTONES DEL COMPOSITOR
    =================================== */
 
-.icon-button,
-.text-button {
-    border: none;
+/* Base común: área táctil de 44 px (mínimo recomendado) */
+.icon-button {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 50%;
     background: transparent;
     color: var(--text);
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    font-size: 15px;
-    font-weight: 600;
-    opacity: 0.95;
-    transition: var(--transition);
-}
-
-.icon-button:hover,
-.text-button:hover {
-    opacity: 1;
-    transform: scale(1.05);
-}
-
-.icon-button:active,
-.text-button:active {
-    transform: scale(0.95);
-}
-
-.icon-button {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
     justify-content: center;
-    color: var(--text);
-    font-size: 24px;
+    cursor: pointer;
     line-height: 1;
+    flex: 0 0 auto;
+    transition: background-color var(--ui-fast) var(--ui-ease),
+                border-color var(--ui-fast) var(--ui-ease),
+                box-shadow var(--ui-med) var(--ui-ease),
+                color var(--ui-fast) var(--ui-ease);
+}
+
+.icon-button:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 2px;
+}
+
+/* --- Botón "+" ------------------------------------------------------ */
+.plus-button:hover,
+.plus-button:focus-visible {
+    border-color: var(--ui-primary);
+    background: var(--ui-primary-soft);
+    box-shadow: 0 0 0 4px var(--ui-primary-soft), var(--ui-shadow-sm);
+}
+
+.plus-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    transform: rotate(0deg);
+    transition: transform var(--ui-slow) var(--ui-ease);
+    will-change: transform;
+}
+
+/* Giro completo al entrar con el cursor (o con el foco de teclado).
+   Se anima SOLO el icono interno: el botón no se mueve. */
+@media (hover: hover) {
+    .plus-button:hover .plus-icon {
+        transform: rotate(360deg);
+    }
+}
+
+/* Con foco de teclado el icono completa el mismo giro de 360° */
+.plus-button:focus-visible .plus-icon {
+    transform: rotate(360deg);
+}
+
+/* El icono NUNCA cambia a ×: sigue siendo el botón "+" que abre y cierra
+   el panel. El estado abierto se comunica con el contorno azul. */
+
+/* --- Botón Herramientas: solo icono + tooltip ----------------------- */
+.tools-trigger {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+}
+
+.tools-button:hover,
+.tools-button:focus-visible,
+body.ui-tools-open .tools-button {
+    border-color: var(--ui-primary);
+    background: var(--ui-primary-soft);
+    box-shadow: 0 0 0 4px var(--ui-primary-soft);
 }
 
 .plus-icon {
@@ -606,12 +849,59 @@ body {
     color: var(--text);
 }
 
+/* Tooltip del botón Herramientas: fondo contrastado, negrita y entrada
+   breve. Es absolute: no ocupa espacio en el flujo, así que aparecer no
+   provoca saltos de layout. Va ENCIMA del icono para no tapar el campo. */
+.tools-tooltip {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 10px);
+    transform: translate(-50%, 4px);
+    padding: 6px 12px;
+    border-radius: var(--ui-radius-sm);
+    background: var(--text);
+    color: var(--bg);
+    font-size: var(--ui-font-xs);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    box-shadow: var(--ui-shadow-md);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 60;
+    transition: opacity var(--ui-fast) var(--ui-ease),
+                transform var(--ui-fast) var(--ui-ease),
+                visibility 0s linear var(--ui-fast);
+}
+
+/* Flecha del tooltip (no captura el puntero) */
+.tools-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--text);
+}
+
+/* Visible con ratón y con foco de teclado */
+.tools-trigger:hover .tools-tooltip,
+.tools-button:focus-visible + .tools-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 0);
+    transition-delay: 0s;
+}
+
 /* Icono de sliders (Herramientas) */
 .sliders-icon {
     width: 16px;
     height: 16px;
     position: relative;
     display: inline-block;
+    color: var(--text);
 }
 
 .sliders-icon::before,
@@ -652,52 +942,223 @@ body {
     top: 7px;
 }
 
+/* --- Botón de envío --------------------------------------------------
+   Círculo azul claro, icono centrado y estados diferenciados. La rotación
+   se dispara UNA vez por envío: .ui-turno se pone en <html> al iniciar
+   handleSendMessage() y no se vuelve a tocar durante el streaming, así que
+   los repintados no reinician la animación. */
+.send-button {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid rgba(99, 179, 237, 0.45);
+    border-radius: 50%;
+    display: inline-grid;
+    place-items: center;
+    background: var(--ui-primary-soft);
+    color: var(--ui-primary);
+    cursor: pointer;
+    flex: 0 0 auto;
+    transition: background-color var(--ui-fast) var(--ui-ease),
+                border-color var(--ui-fast) var(--ui-ease),
+                color var(--ui-fast) var(--ui-ease),
+                box-shadow var(--ui-med) var(--ui-ease),
+                transform var(--ui-fast) var(--ui-ease);
+}
+
+.send-button svg {
+    display: block;
+    transform: rotate(0deg);
+    transition: transform var(--ui-slow) var(--ui-ease);
+}
+
+@media (hover: hover) {
+    .send-button:hover:not(:disabled) {
+        background: var(--ui-primary);
+        border-color: var(--ui-primary);
+        color: #08131f;
+        box-shadow: 0 6px 18px rgba(99, 179, 237, 0.35);
+        transform: translateY(-1px);
+    }
+}
+
+.send-button:active:not(:disabled) {
+    transform: scale(0.94);
+    box-shadow: none;
+}
+
+.send-button:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 3px;
+}
+
+.send-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    background: var(--ui-surface);
+    border-color: var(--ui-hairline);
+    color: var(--muted);
+    box-shadow: none;
+}
+
+/* Un giro breve y suave del icono ">" por envío */
+html.ui-turno .send-button svg {
+    animation: enviarGiro 420ms var(--ui-ease) 1;
+}
+
+@keyframes enviarGiro {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(90deg); }
+}
+
 .microphone {
     font-size: 18px;
     line-height: 1;
 }
 
 /* ===================================
-   CHIPS DE SUGERENCIAS
+   CHIPS DE SUGERENCIAS (tarjetas de materia)
+   Cada chip lleva el color de identidad de su materia (borde, icono y
+   halo) sobre una estructura uniforme. El texto va sobre superficie
+   neutra: el color identifica, no tiñe el texto.
    =================================== */
 
 .chips {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
-    margin-bottom: 20px;
+    margin-bottom: 22px;
 }
 
 .chip {
-    background: var(--chip);
+    position: relative;
+    z-index: -1;      /* siempre por debajo del panel del compositor */
+    --mat-accent: var(--ui-primary);
+    --mat-accent-deep: var(--ui-primary-strong);
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background: var(--ui-surface);
     color: var(--text);
-    border: 1px solid var(--chip-border);
-    border-radius: 999px;
-    padding: 14px 18px;
+    border: 1px solid var(--ui-hairline);
+    border-radius: var(--ui-radius-md);
+    padding: 13px 16px 13px 14px;
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    font-size: 15px;
-    font-weight: 500;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.14);
+    font-family: var(--ui-font-sans);
+    font-size: 0.94rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    box-shadow: var(--ui-shadow-xs);
     white-space: nowrap;
     cursor: pointer;
-    transition: var(--transition);
+    transition: transform var(--ui-med) var(--ui-ease),
+                border-color var(--ui-med) var(--ui-ease),
+                box-shadow var(--ui-med) var(--ui-ease),
+                background-color var(--ui-med) var(--ui-ease);
 }
 
-.chip:hover {
-    background: #282828;
-    border-color: rgba(255,255,255,0.08);
-    transform: translateY(-2px);
+/* Halo de color de la materia (debajo del contenido) */
+.chip::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+        radial-gradient(120% 160% at 0% 0%, color-mix(in srgb, var(--mat-accent) 26%, transparent), transparent 62%),
+        linear-gradient(180deg, transparent 55%, color-mix(in srgb, var(--mat-accent) 10%, transparent));
+    opacity: 0.85;
+    transition: opacity var(--ui-med) var(--ui-ease);
+    pointer-events: none;
+}
+
+/* Banda superior de identidad */
+.chip::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 14px;
+    right: 14px;
+    height: 2px;
+    border-radius: 0 0 2px 2px;
+    background: linear-gradient(90deg, var(--mat-accent), transparent);
+    opacity: 0.75;
+    pointer-events: none;
+}
+
+.chip-emoji {
+    font-size: 1.15rem;
+    line-height: 1;
+    display: inline-grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--mat-accent) 16%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mat-accent) 28%, transparent);
+    flex: 0 0 auto;
+    transition: transform var(--ui-med) var(--ui-ease);
+}
+
+@media (hover: hover) {
+    .chip:hover {
+        border-color: color-mix(in srgb, var(--mat-accent) 55%, transparent);
+        box-shadow: var(--ui-shadow-sm), 0 0 0 4px color-mix(in srgb, var(--mat-accent) 12%, transparent);
+        transform: translateY(-2px);
+    }
+    .chip:hover::before { opacity: 1; }
+    .chip:hover .chip-emoji { transform: scale(1.08); }
 }
 
 .chip:active {
-    transform: translateY(0);
+    transform: translateY(0) scale(0.985);
 }
 
-.chip .emoji {
-    font-size: 16px;
-    line-height: 1;
+.chip:focus-visible {
+    outline: 2px solid var(--mat-accent);
+    outline-offset: 2px;
+}
+
+/* Chip de la materia seleccionada: borde + relleno + marca
+   (no depende solo del color) */
+.chip[aria-pressed="true"] {
+    border-color: var(--mat-accent);
+    background: color-mix(in srgb, var(--mat-accent) 16%, var(--ui-surface));
+    box-shadow: var(--ui-shadow-sm), inset 0 0 0 1px color-mix(in srgb, var(--mat-accent) 40%, transparent);
+}
+
+.chip[aria-pressed="true"] .chip-label::after {
+    content: ' ✓';
+    font-weight: 800;
+    color: var(--mat-accent);
+}
+
+/* Color de identidad por materia (chips) */
+.chip[data-subject="matematicas"] { --mat-accent: var(--mat-matematicas); --mat-accent-deep: var(--mat-matematicas-deep); }
+.chip[data-subject="biologia"]    { --mat-accent: var(--mat-biologia); --mat-accent-deep: var(--mat-biologia-deep); }
+.chip[data-subject="ingles"]      { --mat-accent: var(--mat-ingles); --mat-accent-deep: var(--mat-ingles-deep); }
+.chip[data-subject="quimica"]     { --mat-accent: var(--mat-quimica); --mat-accent-deep: var(--mat-quimica-deep); }
+.chip[data-subject="español"]     { --mat-accent: var(--mat-espanol); --mat-accent-deep: var(--mat-espanol-deep); }
+
+/* Ayúdame a aprender: combinación azul-violeta */
+.chip[data-action="help"] {
+    --mat-accent: var(--ui-indigo);
+    --mat-accent-deep: #3730a3;
+}
+.chip[data-action="help"]::before {
+    background:
+        radial-gradient(120% 160% at 0% 0%, rgba(96, 165, 250, 0.30), transparent 60%),
+        radial-gradient(120% 160% at 100% 100%, rgba(167, 139, 250, 0.30), transparent 60%);
+}
+.chip[data-action="help"]::after {
+    background: linear-gradient(90deg, var(--ui-primary), var(--ui-violet));
+}
+
+/* Preparar ICFES: dorado suave */
+.chip[data-action="icfes"] {
+    --mat-accent: var(--mat-icfes);
+    --mat-accent-deep: var(--mat-icfes-deep);
 }
 
 /* ===================================
@@ -758,42 +1219,89 @@ body {
 
 /* ===================================
    MENÚS DESPLEGABLES
+   SIN barra de desplazamiento interna: el panel crece con su contenido y,
+   si no cabe, se desplaza la PÁGINA (nunca una barra interna).
    =================================== */
 
-.options-menu,
 .tools-menu {
     position: fixed;
     bottom: 180px;
     left: 50%;
     transform: translateX(-50%);
-    width: 90%;
-    max-width: 400px;
-    background: linear-gradient(180deg, #242424 0%, #1f1f1f 100%);
-    border-radius: 24px;
-    box-shadow: var(--shadow);
+    width: min(94vw, 420px);
+    max-width: none;
+    max-height: calc(100vh - 40px);
+    background: var(--panel);
+    border-radius: var(--ui-radius-xl);
+    box-shadow: var(--ui-shadow-lg);
     z-index: 900;
-    opacity: 1;
-    transition: var(--transition);
-    max-height: 60vh;
-    overflow-y: auto;
-    border: 1px solid rgba(255,255,255,0.06);
+    overflow: visible;      /* sin scroll interno */
+    isolation: isolate;
+    border: 1px solid var(--ui-hairline);
+    transition: opacity var(--ui-med) var(--ui-ease),
+                transform var(--ui-med) var(--ui-ease);
+}
+
+/* --- Panel de materias: anclado al compositor ----------------------
+   Se posiciona respecto de .prompt-box, justo bajo el botón "+". Así
+   queda siempre DENTRO de la pantalla y las 13 tarjetas son visibles y
+   clicables. No tiene scroll propio: si el contenido es más alto que la
+   ventana, la PÁGINA se desplaza (nunca una barra interna). */
+.prompt-box {
+    position: relative;
+}
+
+.options-menu {
+    position: absolute;
+    left: 0;
+    right: auto;
+    box-sizing: border-box;   /* el ancho incluye borde y padding */
+    top: calc(100% + 10px);
+    bottom: auto;
+    transform: none;
+    width: min(30rem, calc(100vw - 32px));
+    max-width: calc(100vw - 32px);
+    max-height: none;
+    background: var(--panel);
+    border-radius: var(--ui-radius-xl);
+    box-shadow: var(--ui-shadow-lg);
+    z-index: 900;
+    overflow: visible;      /* sin scroll interno */
+    isolation: isolate;
+    border: 1px solid var(--ui-hairline);
+    transition: opacity var(--ui-med) var(--ui-ease),
+                transform var(--ui-med) var(--ui-ease);
+}
+
+/* Si no hay sitio debajo del compositor, el panel se abre HACIA ARRIBA
+   (lo decide app.js midiendo el espacio real, no un alto fijo). */
+.prompt-box.menu-abajo .options-menu {
+    top: auto;
+    bottom: calc(100% + 10px);
 }
 
 .options-menu.hidden,
 .tools-menu.hidden {
     opacity: 0;
     pointer-events: none;
+}
+
+.options-menu.hidden {
+    transform: translateY(6px);
+}
+
+.tools-menu.hidden {
     transform: translateX(-50%) translateY(10px);
 }
 
 .options-menu-content,
 .tools-menu-content {
-    padding: 20px;
+    padding: 16px;
 }
 
 /* Secciones del menú */
 .menu-section {
-    margin-bottom: 20px;
+    margin-bottom: 14px;
 }
 
 .menu-section:last-child {
@@ -801,16 +1309,16 @@ body {
 }
 
 .section-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--muted);
+    font-size: var(--ui-font-xs);
+    font-weight: 700;
+    color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.8px;
-    margin-bottom: 14px;
-    padding: 0 8px;
+    letter-spacing: 0.09em;
+    margin-bottom: 6px;
+    padding: 0 2px;
 }
 
-/* Lista de materias */
+/* Lista de herramientas */
 .subjects-list,
 .tools-list {
     list-style: none;
@@ -831,39 +1339,26 @@ body {
     border: none;
     background: transparent;
     color: var(--text);
+    font-family: var(--ui-font-sans);
     font-size: 16px;
     text-align: left;
     cursor: pointer;
     border-radius: 12px;
-    transition: var(--transition);
+    transition: background-color var(--ui-fast) var(--ui-ease),
+                transform var(--ui-fast) var(--ui-ease);
     font-weight: 500;
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-.subject-button:hover,
 .tool-button:hover {
-    background: #2a2a2a;
+    background: var(--ui-surface-strong);
     transform: translateX(4px);
 }
 
-.subject-button:active,
 .tool-button:active {
-    background: #1f1f1f;
-}
-
-/* Botón especial para ICFES */
-.icfes-button {
-    background: rgba(255,255,255,0.02);
-    color: #4a9eff;
-    font-weight: 600;
-    border: 1px solid rgba(74, 158, 255, 0.2);
-}
-
-.icfes-button:hover {
-    background: rgba(74, 158, 255, 0.15);
-    border-color: rgba(74, 158, 255, 0.4);
+    background: var(--ui-surface);
 }
 
 /* Iconos en herramientas */
@@ -879,36 +1374,29 @@ body {
 /* Separador entre secciones */
 .menu-divider {
     height: 1px;
-    background: rgba(255,255,255,0.06);
+    background: var(--ui-hairline);
     margin: 20px 0;
 }
 
 /* ===================================
    SCROLLBAR PERSONALIZADA
+   (solo el área de mensajes)
    =================================== */
 
-.messages-area::-webkit-scrollbar,
-.options-menu::-webkit-scrollbar,
-.tools-menu::-webkit-scrollbar {
+.messages-area::-webkit-scrollbar {
     width: 8px;
 }
 
-.messages-area::-webkit-scrollbar-track,
-.options-menu::-webkit-scrollbar-track,
-.tools-menu::-webkit-scrollbar-track {
+.messages-area::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.messages-area::-webkit-scrollbar-thumb,
-.options-menu::-webkit-scrollbar-thumb,
-.tools-menu::-webkit-scrollbar-thumb {
+.messages-area::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.15);
     border-radius: 4px;
 }
 
-.messages-area::-webkit-scrollbar-thumb:hover,
-.options-menu::-webkit-scrollbar-thumb:hover,
-.tools-menu::-webkit-scrollbar-thumb:hover {
+.messages-area::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.25);
 }
 
@@ -943,31 +1431,56 @@ body {
     }
 
     .prompt-actions {
-        gap: 12px;
+        gap: 10px;
     }
 
     .left-actions,
     .right-actions {
-        gap: 12px;
+        gap: 6px;
+    }
+
+    /* Chips: rejilla de dos columnas sin desbordamiento horizontal */
+    .chips {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    /* Materias: dos columnas compactas (los estilos finos están al final
+       del archivo; aquí solo se fija la malla) */
+    .subjects-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
     }
 
     .chip {
         width: 100%;
-        justify-content: center;
-        text-align: center;
+        justify-content: flex-start;
+        text-align: left;
+        padding: 11px 12px;
+        font-size: 0.88rem;
+        white-space: normal;
     }
 
-    .options-menu,
+    .options-menu {
+        width: calc(100vw - 32px);
+        max-width: calc(100vw - 32px);
+    }
+
     .tools-menu {
-        width: 95%;
+        width: calc(100vw - 24px);
         max-width: none;
-        bottom: 160px;
     }
 
     .subject-indicator {
-        top: 10px;
-        padding: 10px 20px;
-        max-width: 90%;
+        padding: 7px 10px 7px 12px;
+        max-width: 100%;
+    }
+
+    .status-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
     }
 
     .indicator-text {
@@ -977,17 +1490,13 @@ body {
 
 @media (max-width: 480px) {
     .prompt-input {
-        font-size: 15px;
+        font-size: 16px; /* 16px evita el zoom automático de iOS al enfocar */
     }
 
-    .icon-button {
-        width: 32px;
-        height: 32px;
-        font-size: 20px;
-    }
-
-    .text-button {
-        font-size: 13px;
+    .icon-button,
+    .send-button {
+        width: 42px;
+        height: 42px;
     }
 
     .message {
@@ -1088,6 +1597,12 @@ body {
 /* La barra es fija: deja hueco para que el contenido no quede debajo */
 .page {
     padding-top: 84px;
+}
+
+/* Barra superior: cristal suave sobre el fondo del estudiante */
+.topbar {
+    background: color-mix(in srgb, var(--bg) 78%, transparent);
+    border-bottom: 1px solid var(--ui-hairline-soft);
 }
 
 /* ===================================
@@ -1282,126 +1797,217 @@ body {
    respetan prefers-reduced-motion (bloque al final del archivo).
    ================================================================== */
 
-/* --- Tarjetas de materias (grid) ----------------------------------- */
+/* --- Tarjetas de materias (grid) -----------------------------------
+   Grid responsive SIN altura fija y SIN overflow: el panel crece con el
+   contenido y, si hace falta, se desplaza la página. Cada tarjeta tiene
+   su color de materia y un fondo con degradados en movimiento que se
+   mezcla despacio (visible siempre, más vivo al pasar el cursor).
+   Transiciones de color/sombra/posición sin parpadeos. */
 .subjects-grid {
     list-style: none;
     margin: 0;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+    overflow: visible;
 }
 
 .subjects-grid .subject-item {
     margin: 0;
+    min-width: 0;
 }
 
 .subjects-grid .subject-button {
+    --mat-accent: var(--ui-primary);
+    --mat-accent-deep: var(--ui-primary-strong);
+    position: relative;
+    isolation: isolate;
     width: 100%;
     height: 100%;
+    min-height: 46px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     text-align: left;
-    padding: 14px 16px;
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    background: linear-gradient(180deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.02) 100%);
+    padding: 8px 10px;
+    border-radius: var(--ui-radius-md);
+    border: 1px solid var(--ui-hairline);
+    /* Fondo del color de la materia, en degradado suave (no saturado) */
+    background:
+        linear-gradient(135deg,
+            color-mix(in srgb, var(--mat-accent) 15%, var(--ui-surface)) 0%,
+            color-mix(in srgb, var(--mat-accent-deep) 12%, var(--ui-surface)) 100%);
     color: var(--text);
     cursor: pointer;
-    font: inherit;
-    font-size: 0.93rem;
-    line-height: 1.35;
-    position: relative;
+    font-family: var(--ui-font-sans);
+    font-size: 0.8rem;
+    line-height: 1.25;
     overflow: hidden;
+    box-shadow: var(--ui-shadow-xs);
+    transform: translateZ(0);
     transition:
-        transform 160ms cubic-bezier(0.2, 0.8, 0.3, 1),
-        box-shadow 200ms ease,
-        border-color 200ms ease,
-        background-color 200ms ease;
+        transform var(--ui-med) var(--ui-ease),
+        box-shadow var(--ui-med) var(--ui-ease),
+        border-color var(--ui-med) var(--ui-ease),
+        background-color var(--ui-med) var(--ui-ease);
 }
 
-/* Halo sutil que aparece solo al interactuar (no permanente) */
+/* Fondo multicolor en movimiento (capa decorativa, bajo el contenido).
+   Dos capas radiales que se desplazan y mezclan lentamente. */
+.subjects-grid .subject-button::before {
+    content: '';
+    position: absolute;
+    inset: -60%;
+    z-index: -1;
+    background:
+        radial-gradient(38% 42% at 22% 28%, color-mix(in srgb, var(--mat-accent) 55%, transparent), transparent 70%),
+        radial-gradient(40% 44% at 78% 72%, color-mix(in srgb, var(--ui-violet) 42%, transparent), transparent 70%),
+        radial-gradient(36% 40% at 60% 12%, color-mix(in srgb, var(--mat-accent-deep) 45%, transparent), transparent 72%);
+    filter: blur(8px) saturate(1.05);
+    opacity: 0.55;
+    transform: translate3d(-4%, -2%, 0) scale(1.02);
+    animation: materiaFondo 16s ease-in-out infinite alternate;
+    animation-delay: calc(var(--i, 0) * -1.7s);
+    transition: opacity var(--ui-slow) var(--ui-ease), filter var(--ui-slow) var(--ui-ease);
+    pointer-events: none;
+}
+
+/* Reflejo/halo al interactuar */
 .subjects-grid .subject-button::after {
     content: '';
     position: absolute;
     inset: 0;
-    border-radius: inherit;
-    background: radial-gradient(120% 120% at 0% 0%, rgba(99,179,237,0.16), transparent 60%);
+    z-index: -1;
+    background: radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--mat-accent) 28%, transparent), transparent 62%);
     opacity: 0;
-    transition: opacity 200ms ease;
+    transition: opacity var(--ui-med) var(--ui-ease);
     pointer-events: none;
 }
 
+@keyframes materiaFondo {
+    0%   { transform: translate3d(-6%, -3%, 0) scale(1.04) rotate(0deg); }
+    50%  { transform: translate3d(4%, 3%, 0)  scale(1.10) rotate(3deg); }
+    100% { transform: translate3d(-2%, 5%, 0) scale(1.06) rotate(-2deg); }
+}
+
 .subjects-grid .subject-emoji {
-    font-size: 1.45rem;
+    font-size: 1.3rem;
     line-height: 1;
     flex: 0 0 auto;
     display: grid;
     place-items: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 11px;
-    background: rgba(255, 255, 255, 0.05);
-    transition: transform 220ms cubic-bezier(0.2, 0.8, 0.3, 1), background-color 220ms ease;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--mat-accent) 18%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mat-accent) 30%, transparent);
+    transition: transform 260ms var(--ui-ease), background-color 260ms var(--ui-ease);
 }
 
 .subjects-grid .subject-name {
     flex: 1 1 auto;
     min-width: 0;
-    font-weight: 500;
+    font-weight: 600;
+    overflow-wrap: anywhere;
 }
 
 /* Retroalimentación al pasar el cursor (solo dispositivos con hover) */
 @media (hover: hover) {
     .subjects-grid .subject-button:hover {
-        border-color: rgba(99, 179, 237, 0.42);
+        border-color: color-mix(in srgb, var(--mat-accent) 60%, transparent);
         transform: translateY(-3px);
-        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
+        box-shadow: var(--ui-shadow-md), 0 0 0 4px color-mix(in srgb, var(--mat-accent) 14%, transparent);
+    }
+    .subjects-grid .subject-button:hover::before {
+        opacity: 0.95;
+        filter: blur(6px) saturate(1.25);
+        animation-duration: 6s;
     }
     .subjects-grid .subject-button:hover::after { opacity: 1; }
     .subjects-grid .subject-button:hover .subject-emoji {
-        transform: scale(1.12) rotate(-4deg);
-        background: rgba(99, 179, 237, 0.16);
+        transform: scale(1.1) rotate(-4deg);
+        background: color-mix(in srgb, var(--mat-accent) 30%, transparent);
     }
 }
 
 /* Al pulsar: retorno inmediato, sin retrasar la acción */
 .subjects-grid .subject-button:active {
-    transform: translateY(0) scale(0.98);
+    transform: translateY(0) scale(0.985);
     box-shadow: none;
 }
 
-/* Foco visible por teclado */
+/* Foco visible por teclado (ámbito del estudiante) */
 .subjects-grid .subject-button:focus-visible,
 .message a:focus-visible,
-button:focus-visible {
-    outline: 2px solid var(--primary);
+.page button:focus-visible {
+    outline: 2px solid var(--ui-primary);
     outline-offset: 2px;
 }
 
-/* Materia activa: se distingue sin depender solo del color */
+/* Materia activa: borde + relleno + marca (no solo color) */
 .subjects-grid .subject-button[aria-pressed="true"] {
-    background: rgba(99, 179, 237, 0.15);
-    border-color: rgba(99, 179, 237, 0.6);
-    box-shadow: inset 0 0 0 1px rgba(99, 179, 237, 0.35);
+    border-color: var(--mat-accent);
+    background:
+        linear-gradient(135deg,
+            color-mix(in srgb, var(--mat-accent) 34%, var(--ui-surface)) 0%,
+            color-mix(in srgb, var(--mat-accent-deep) 30%, var(--ui-surface)) 100%);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mat-accent) 55%, transparent), var(--ui-shadow-sm);
+}
+
+.subjects-grid .subject-button[aria-pressed="true"]::before {
+    opacity: 1;
 }
 
 .subjects-grid .subject-button[aria-pressed="true"] .subject-emoji {
-    background: rgba(99, 179, 237, 0.24);
+    background: color-mix(in srgb, var(--mat-accent) 34%, transparent);
 }
 
 /* Marca de selección accesible (no solo color) */
 .subjects-grid .subject-button[aria-pressed="true"] .subject-name::after {
     content: ' ✓';
-    color: var(--primary);
-    font-weight: 700;
+    color: var(--mat-accent);
+    font-weight: 800;
 }
 
+/* Color de identidad de cada materia (tarjetas del menú) */
+.subjects-grid .subject-matematicas        { --mat-accent: var(--mat-matematicas);        --mat-accent-deep: var(--mat-matematicas-deep); }
+.subjects-grid .subject-biologia           { --mat-accent: var(--mat-biologia);           --mat-accent-deep: var(--mat-biologia-deep); }
+.subjects-grid .subject-fisica             { --mat-accent: var(--mat-fisica);             --mat-accent-deep: var(--mat-fisica-deep); }
+.subjects-grid .subject-quimica            { --mat-accent: var(--mat-quimica);            --mat-accent-deep: var(--mat-quimica-deep); }
+.subjects-grid .subject-sociales           { --mat-accent: var(--mat-sociales);           --mat-accent-deep: var(--mat-sociales-deep); }
+.subjects-grid .subject-espanol            { --mat-accent: var(--mat-espanol);            --mat-accent-deep: var(--mat-espanol-deep); }
+.subjects-grid .subject-filosofia          { --mat-accent: var(--mat-filosofia);          --mat-accent-deep: var(--mat-filosofia-deep); }
+.subjects-grid .subject-informatica        { --mat-accent: var(--mat-informatica);        --mat-accent-deep: var(--mat-informatica-deep); }
+.subjects-grid .subject-ingles             { --mat-accent: var(--mat-ingles);             --mat-accent-deep: var(--mat-ingles-deep); }
+.subjects-grid .subject-arte               { --mat-accent: var(--mat-arte);               --mat-accent-deep: var(--mat-arte-deep); }
+.subjects-grid .subject-educacion-fisica   { --mat-accent: var(--mat-educacion-fisica);   --mat-accent-deep: var(--mat-educacion-fisica-deep); }
+.subjects-grid .subject-religion           { --mat-accent: var(--mat-religion);           --mat-accent-deep: var(--mat-religion-deep); }
+.subjects-grid .subject-icfes              { --mat-accent: var(--mat-icfes);              --mat-accent-deep: var(--mat-icfes-deep); }
+
+/* Desfase del fondo por tarjeta: las animaciones no laten en sincronía */
+.subjects-grid .subject-item:nth-child(1) .subject-button  { --i: 0; }
+.subjects-grid .subject-item:nth-child(2) .subject-button  { --i: 1; }
+.subjects-grid .subject-item:nth-child(3) .subject-button  { --i: 2; }
+.subjects-grid .subject-item:nth-child(4) .subject-button  { --i: 3; }
+.subjects-grid .subject-item:nth-child(5) .subject-button  { --i: 4; }
+.subjects-grid .subject-item:nth-child(6) .subject-button  { --i: 5; }
+.subjects-grid .subject-item:nth-child(7) .subject-button  { --i: 6; }
+.subjects-grid .subject-item:nth-child(8) .subject-button  { --i: 7; }
+.subjects-grid .subject-item:nth-child(9) .subject-button  { --i: 8; }
+.subjects-grid .subject-item:nth-child(10) .subject-button { --i: 9; }
+.subjects-grid .subject-item:nth-child(11) .subject-button { --i: 10; }
+.subjects-grid .subject-item:nth-child(12) .subject-button { --i: 11; }
+.subjects-grid .subject-item:nth-child(13) .subject-button { --i: 12; }
+
 .section-hint {
-    margin: -4px 0 10px;
-    font-size: 0.85rem;
+    margin: 0 0 14px;
+    font-size: var(--ui-font-sm);
     color: var(--text-secondary);
+    padding: 0 2px;
+    /* puede partirse: no debe fijar un ancho m�nimo mayor que el panel */
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 /* --- Menú "+" / menú de opciones ----------------------------------- */
@@ -1426,25 +2032,8 @@ button:focus-visible {
     }
 }
 
-/* Botón "+": realimentación de pulsación sin efecto permanente */
-.options-button,
-#optionsButton,
-.btn-options {
-    transition: transform 140ms ease, box-shadow 180ms ease, background-color 180ms ease;
-}
-
-.options-button:active,
-#optionsButton:active,
-.btn-options:active {
-    transform: scale(0.94);
-}
-
-.options-button[aria-expanded="true"],
-#optionsButton[aria-expanded="true"],
-.btn-options[aria-expanded="true"] {
-    background: rgba(99, 179, 237, 0.18);
-    box-shadow: inset 0 0 0 1px rgba(99, 179, 237, 0.45);
-}
+/* Botón "+": la realimentación de pulsación y el estado abierto ya están
+   definidos arriba (.plus-button). La rotación se aplica solo al icono. */
 
 /* --- Botones y tarjetas de herramientas ---------------------------- */
 .tool-item .tool-button,
@@ -1506,41 +2095,749 @@ button:focus-visible {
         animation: none !important;
     }
 
+    /* El fondo de las materias queda estático (se conserva el color, no el
+       movimiento) y no hay giros de iconos. La selección sigue siendo
+       visible por borde, relleno y marca ✓. */
+    .subjects-grid .subject-button::before {
+        animation: none !important;
+        transform: none !important;
+    }
+
+    .plus-button:hover .plus-icon,
+    .plus-button:focus-visible .plus-icon,
+    html.ui-turno .send-button svg {
+        animation: none !important;
+        transform: none !important;
+        transition: none !important;
+    }
+
     @media (hover: hover) {
         .subjects-grid .subject-button:hover,
         .tool-item .tool-button:hover,
-        .tool-item button:hover {
+        .tool-item button:hover,
+        .chip:hover {
             transform: none !important;
         }
     }
 }
-
 /* ==================================================================
-   STREAMING — indicador de escritura progresiva
-   Un cursor parpadeante al final del último párrafo mientras llegan
-   fragmentos. Desaparece al terminar (.is-streaming se retira).
+   REDISEÑO DE LA INTERFAZ DEL ESTUDIANTE — BLOQUE ÚNICO
+   ==================================================================
+   Este bloque reúne, ordenadas y sin duplicados, todas las reglas nuevas
+   del rediseño. Todo va con ámbito de la interfaz del estudiante:
+   `.page`, `.prompt-box`, `.options-menu`, `.chips`, `.message`,
+   `.topbar`. El panel docente (teacher.css) no se ve afectado.
+
+   Índice
+     1. Utilidades (sr-only)
+     2. Compositor: ancho, foco y orden de apilado
+     3. Botón "+" (giro 360° del icono y contorno azul)
+     4. Botón Herramientas (solo icono) y tooltip
+     5. Botón de envío (círculo azul + rotación por envío)
+     6. Chip de materia (color de identidad, hover, selección)
+     7. Panel de materias (rejilla sin scroll, tarjetas, selección)
+     8. Respuesta del tutor y sus componentes Markdown
+     9. Barra superior responsiva
+    10. Ventanas bajas y movimiento reducido
    ================================================================== */
-.message.assistant.is-streaming > :last-child::after {
-    content: '';
-    display: inline-block;
-    width: 7px;
-    height: 1.05em;
-    margin-left: 3px;
-    vertical-align: text-bottom;
-    border-radius: 2px;
-    background: var(--primary);
-    animation: cursorParpadeo 1s steps(2, start) infinite;
+
+/* ------------------------------------------------------------------
+   1. UTILIDADES
+   ------------------------------------------------------------------ */
+.sr-only {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
 }
 
-@keyframes cursorParpadeo {
-    0%, 50% { opacity: 1; }
-    50.01%, 100% { opacity: 0.15; }
+/* ------------------------------------------------------------------
+   2. COMPOSITOR: ANCHO, FOCO Y APILADO
+   .page es flex column: sus hijos se limitan al ancho útil y el compositor
+   queda por encima de chips y fila de estado para que su panel no quede
+   tapado por ellos.
+   ------------------------------------------------------------------ */
+.page > * {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
 }
 
-/* Sin movimiento si el usuario lo prefiere: el cursor queda estático */
-@media (prefers-reduced-motion: reduce) {
-    .message.assistant.is-streaming > :last-child::after {
-        animation: none;
-        opacity: 0.5;
+.page > section.prompt-box {
+    position: relative;
+    z-index: 50;
+}
+
+.page > .chips,
+.page > .status-row,
+.page > .welcome-screen,
+.page > .messages-area {
+    position: relative;
+    z-index: 1;
+}
+
+.prompt-box {
+    justify-content: flex-start;
+    min-height: 0;
+    padding: 14px 14px 12px 18px;
+}
+
+/* Foco: contorno fino azul, sin recuadro dominante */
+.prompt-box:focus-within {
+    border-color: var(--ui-primary);
+    box-shadow: 0 0 0 2px var(--ui-primary-soft), var(--ui-shadow-md);
+}
+
+.prompt-input {
+    min-height: 28px;
+    margin-bottom: 10px;
+}
+
+.prompt-actions {
+    margin-top: 2px;
+}
+
+/* ------------------------------------------------------------------
+   3. BOTÓN "+"
+   El giro se aplica SOLO al icono interno: el botón no se mueve.
+   ------------------------------------------------------------------ */
+.plus-button:hover,
+.plus-button:focus-visible,
+.plus-button[aria-expanded="true"] {
+    border-color: #63b3ed;
+    background: var(--ui-primary-soft);
+    box-shadow: 0 0 0 4px var(--ui-primary-soft), var(--ui-shadow-sm);
+}
+
+.plus-icon {
+    display: inline-grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    font-size: 24px;
+    font-weight: 300;
+    line-height: 1;
+    transform: rotate(0deg);
+    transition: transform var(--ui-slow) var(--ui-ease);
+}
+
+@media (hover: hover) {
+    .plus-button:hover .plus-icon {
+        transform: rotate(360deg);
     }
+}
+
+.plus-button:focus-visible .plus-icon {
+    transform: rotate(360deg);
+}
+
+/* ------------------------------------------------------------------
+   4. HERRAMIENTAS: SOLO ICONO + TOOLTIP
+   ------------------------------------------------------------------ */
+.tools-trigger {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+}
+
+.tools-button:hover,
+.tools-button:focus-visible,
+.tools-button[aria-expanded="true"] {
+    border-color: var(--ui-primary);
+    background: var(--ui-primary-soft);
+    box-shadow: 0 0 0 4px var(--ui-primary-soft);
+}
+
+.sliders-icon {
+    width: 18px;
+    height: 18px;
+    position: relative;
+    display: inline-block;
+    color: var(--text);
+}
+
+.sliders-icon::before,
+.sliders-icon::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: currentColor;
+    border-radius: 999px;
+}
+
+.sliders-icon::before { top: 5px; }
+.sliders-icon::after  { top: 11px; }
+
+.sliders-icon i,
+.sliders-icon b {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 2px var(--ui-surface-strong);
+}
+
+.sliders-icon i { left: 3px;  top: 3px; }
+.sliders-icon b { right: 3px; top: 9px; }
+
+.tools-button:hover .sliders-icon,
+.tools-button:focus-visible .sliders-icon {
+    color: var(--ui-primary);
+}
+
+/* Tooltip: DEBAJO del icono (no tapa el campo), absolute → sin saltos de
+   layout, visible con hover y con foco de teclado. */
+.tools-tooltip {
+    position: absolute;
+    left: 50%;
+    top: calc(100% + 8px);
+    bottom: auto;
+    transform: translate(-50%, -4px);
+    padding: 6px 12px;
+    border-radius: var(--ui-radius-sm);
+    background: var(--text);
+    color: var(--bg);
+    font-size: var(--ui-font-xs);
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: var(--ui-shadow-md);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: 60;
+    transition: opacity var(--ui-fast) var(--ui-ease),
+                transform var(--ui-fast) var(--ui-ease),
+                visibility 0s linear var(--ui-fast);
+}
+
+.tools-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-bottom-color: var(--text);
+}
+
+.tools-trigger:hover .tools-tooltip,
+.tools-button:focus-visible + .tools-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 0);
+    transition-delay: 0s;
+}
+
+/* ------------------------------------------------------------------
+   5. BOTÓN DE ENVÍO
+   ------------------------------------------------------------------ */
+/* La rotación del icono se dispara una vez por envío: .ui-turno se pone en
+   <html> al iniciar handleSendMessage() y no se repite durante el streaming. */
+html.ui-turno .send-button svg {
+    animation: enviarGiro 420ms var(--ui-ease) 1 both;
+}
+
+@keyframes enviarGiro {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(90deg); }
+}
+
+.prompt-box.is-sending .send-button {
+    border-color: var(--ui-primary);
+    background: var(--ui-primary-soft);
+}
+
+/* ------------------------------------------------------------------
+   6. CHIPS DE MATERIA
+   ------------------------------------------------------------------ */
+.chips {
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.chip {
+    align-self: stretch;
+    min-height: 48px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+}
+
+.chip-label {
+    display: inline-block;
+}
+
+.chip-emoji {
+    width: 26px;
+    height: 26px;
+    font-size: 1.05rem;
+    border-radius: 8px;
+}
+
+/* La materia elegida se marca igual que en el panel: relleno azul + ✓ */
+.chip[aria-pressed="true"] {
+    border-color: var(--ui-primary) !important;
+    background: var(--ui-primary) !important;
+    box-shadow: 0 6px 18px rgba(99, 179, 237, 0.3) !important;
+}
+
+.chip[aria-pressed="true"] .chip-label,
+.chip[aria-pressed="true"] .chip-label::after {
+    color: #08131f !important;
+}
+
+/* ------------------------------------------------------------------
+   7. PANEL DE MATERIAS
+   Anclado al compositor. Sin altura fija y sin barra interna: la rejilla se
+   reparte en columnas (app.js calcula --columnas-materias) y, si aun así no
+   cupiera, se desplaza la PÁGINA, nunca el panel.
+   ------------------------------------------------------------------ */
+.prompt-box .options-menu {
+    position: absolute;
+    left: 0;
+    right: auto;
+    top: calc(100% + 10px);
+    bottom: auto;
+    transform: none;
+    width: min(34rem, 100%);
+    max-width: 100%;
+    max-height: none;
+    box-sizing: border-box;
+    background: var(--panel);
+    border: 1px solid var(--ui-hairline);
+    border-radius: var(--ui-radius-xl);
+    box-shadow: var(--ui-shadow-lg), 0 0 0 1px var(--ui-hairline);
+    overflow: visible;
+    isolation: isolate;
+    z-index: 60;
+    transition: opacity var(--ui-med) var(--ui-ease),
+                transform var(--ui-med) var(--ui-ease);
+}
+
+.prompt-box .options-menu.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(6px);
+}
+
+/* Apertura hacia arriba solo cuando no hay sitio debajo (lo decide app.js) */
+.prompt-box.menu-abajo .options-menu {
+    top: auto;
+    bottom: calc(100% + 10px);
+}
+
+.prompt-box .options-menu .options-menu-content {
+    padding: 14px 16px 16px;
+}
+
+.prompt-box .options-menu .menu-section {
+    min-width: 0;
+    margin-bottom: 14px;
+}
+
+.prompt-box .options-menu .menu-section:last-child {
+    margin-bottom: 0;
+}
+
+.options-menu-content > * {
+    min-width: 0;
+}
+
+.prompt-box .options-menu .section-title {
+    font-size: var(--ui-font-xs);
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    margin: 0 0 5px;
+    padding: 0;
+}
+
+.prompt-box .options-menu .section-hint {
+    margin: 0 0 10px;
+    padding: 0;
+    font-size: var(--ui-font-sm);
+    color: var(--text-secondary);
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.prompt-box .options-menu .menu-divider {
+    height: 1px;
+    background: var(--ui-hairline);
+    margin: 12px 0 10px;
+}
+
+.prompt-box .options-menu .subjects-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(var(--columnas-materias, 3), minmax(0, 1fr));
+    gap: 8px;
+    overflow: visible;
+}
+
+.prompt-box .options-menu .subject-item {
+    min-width: 0;
+    margin: 0;
+}
+
+.prompt-box .options-menu .subject-item:nth-child(1) .subject-button  { --i: 0; }
+.prompt-box .options-menu .subject-item:nth-child(2) .subject-button  { --i: 1; }
+.prompt-box .options-menu .subject-item:nth-child(3) .subject-button  { --i: 2; }
+.prompt-box .options-menu .subject-item:nth-child(4) .subject-button  { --i: 3; }
+.prompt-box .options-menu .subject-item:nth-child(5) .subject-button  { --i: 4; }
+.prompt-box .options-menu .subject-item:nth-child(6) .subject-button  { --i: 5; }
+.prompt-box .options-menu .subject-item:nth-child(7) .subject-button  { --i: 6; }
+.prompt-box .options-menu .subject-item:nth-child(8) .subject-button  { --i: 7; }
+.prompt-box .options-menu .subject-item:nth-child(9) .subject-button  { --i: 8; }
+.prompt-box .options-menu .subject-item:nth-child(10) .subject-button { --i: 9; }
+.prompt-box .options-menu .subject-item:nth-child(11) .subject-button { --i: 10; }
+.prompt-box .options-menu .subject-item:nth-child(12) .subject-button { --i: 11; }
+
+.prompt-box .options-menu .subject-button {
+    width: 100%;
+    min-height: 52px;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 12px;
+    border: 1px solid color-mix(in srgb, var(--mat-accent) 40%, var(--ui-hairline));
+    background:
+        linear-gradient(135deg,
+            color-mix(in srgb, var(--mat-accent) 18%, var(--bg)) 0%,
+            color-mix(in srgb, var(--mat-accent-deep) 15%, var(--bg)) 100%);
+    color: var(--text);
+    font-family: var(--ui-font-sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform var(--ui-med) var(--ui-ease),
+                border-color var(--ui-med) var(--ui-ease),
+                box-shadow var(--ui-med) var(--ui-ease),
+                background-color var(--ui-med) var(--ui-ease);
+}
+
+/* Degradado de la materia en movimiento (capa decorativa bajo el contenido) */
+.prompt-box .options-menu .subject-button::before {
+    content: '';
+    position: absolute;
+    inset: -60%;
+    z-index: -1;
+    background:
+        radial-gradient(46% 50% at 18% 22%, color-mix(in srgb, var(--mat-accent) 55%, transparent), transparent 72%),
+        radial-gradient(46% 50% at 84% 80%, color-mix(in srgb, var(--ui-violet) 32%, transparent), transparent 74%);
+    filter: blur(14px) saturate(1.15);
+    opacity: 0.45;
+    animation: materiaFondo 16s ease-in-out infinite alternate;
+    animation-delay: calc(var(--i, 0) * -1.3s);
+    transition: opacity var(--ui-slow) var(--ui-ease);
+    pointer-events: none;
+}
+
+.prompt-box .options-menu .subject-button {
+    position: relative;
+    isolation: isolate;
+}
+
+.prompt-box .options-menu .subject-emoji {
+    flex: 0 0 22px;
+    width: 22px;
+    height: 22px;
+    font-size: 1.05rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+}
+
+.prompt-box .options-menu .subject-name {
+    display: block;
+    min-width: 0;
+    flex: 1 1 auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.72rem;
+    line-height: 1.2;
+}
+
+@keyframes materiaFondo {
+    0%   { transform: translate3d(-6%, -3%, 0) scale(1.04) rotate(0deg); }
+    50%  { transform: translate3d(4%, 3%, 0)  scale(1.10) rotate(3deg); }
+    100% { transform: translate3d(-2%, 5%, 0) scale(1.06) rotate(-2deg); }
+}
+
+@media (hover: hover) {
+    .prompt-box .options-menu .subject-button:hover {
+        transform: translateY(-2px);
+        border-color: color-mix(in srgb, var(--mat-accent) 65%, transparent);
+        box-shadow: var(--ui-shadow-sm), 0 0 0 4px color-mix(in srgb, var(--mat-accent) 12%, transparent);
+    }
+    .prompt-box .options-menu .subject-button:hover::before {
+        opacity: 0.9;
+    }
+}
+
+.prompt-box .options-menu .subject-button:active {
+    transform: translateY(0) scale(0.985);
+}
+
+.prompt-box .options-menu .subject-button:focus-visible {
+    outline: 2px solid var(--ui-primary);
+    outline-offset: 2px;
+}
+
+/* Materia elegida: relleno azul de marca + negrita + ✓ (independiente del
+   color de identidad, para no confundir el tinte de la materia con la
+   selección). */
+.prompt-box .options-menu .subject-button[aria-pressed="true"] {
+    background: var(--ui-primary);
+    border-color: var(--ui-primary-strong);
+    color: #08131f;
+    box-shadow: 0 6px 18px rgba(99, 179, 237, 0.35),
+                inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.prompt-box .options-menu .subject-button[aria-pressed="true"]::before {
+    opacity: 0;
+}
+
+.prompt-box .options-menu .subject-button[aria-pressed="true"] .subject-name {
+    color: #08131f;
+    font-weight: 800;
+}
+
+.prompt-box .options-menu .subject-button[aria-pressed="true"] .subject-name::after {
+    content: ' ✓';
+    font-weight: 900;
+}
+
+/* Color de identidad de cada materia */
+.subject-matematicas      { --mat-accent: var(--mat-matematicas);      --mat-accent-deep: var(--mat-matematicas-deep); }
+.subject-biologia         { --mat-accent: var(--mat-biologia);         --mat-accent-deep: var(--mat-biologia-deep); }
+.subject-fisica           { --mat-accent: var(--mat-fisica);           --mat-accent-deep: var(--mat-fisica-deep); }
+.subject-quimica          { --mat-accent: var(--mat-quimica);          --mat-accent-deep: var(--mat-quimica-deep); }
+.subject-sociales         { --mat-accent: var(--mat-sociales);         --mat-accent-deep: var(--mat-sociales-deep); }
+.subject-espanol          { --mat-accent: var(--mat-espanol);          --mat-accent-deep: var(--mat-espanol-deep); }
+.subject-filosofia        { --mat-accent: var(--mat-filosofia);        --mat-accent-deep: var(--mat-filosofia-deep); }
+.subject-informatica      { --mat-accent: var(--mat-informatica);      --mat-accent-deep: var(--mat-informatica-deep); }
+.subject-ingles           { --mat-accent: var(--mat-ingles);           --mat-accent-deep: var(--mat-ingles-deep); }
+.subject-arte             { --mat-accent: var(--mat-arte);             --mat-accent-deep: var(--mat-arte-deep); }
+.subject-educacion-fisica { --mat-accent: var(--mat-educacion-fisica); --mat-accent-deep: var(--mat-educacion-fisica-deep); }
+.subject-religion         { --mat-accent: var(--mat-religion);         --mat-accent-deep: var(--mat-religion-deep); }
+.subject-icfes            { --mat-accent: var(--mat-icfes);            --mat-accent-deep: var(--mat-icfes-deep); }
+
+/* Con el panel abierto, los chips y la fila de estado se ocultan: el panel
+   ofrece las mismas materias y así no asoma nada por detrás. */
+body.ui-menu-open .chips,
+body.ui-menu-open .status-row {
+    visibility: hidden;
+}
+
+/* ------------------------------------------------------------------
+   8. RESPUESTA DEL TUTOR
+   ------------------------------------------------------------------ */
+.message .md-table-wrap {
+    border: 1px solid var(--ui-hairline);
+    border-radius: 12px;
+    background: var(--ui-surface);
+}
+
+.message .md-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.message .md-table th,
+.message .md-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--ui-hairline-soft);
+    border-right: 1px solid var(--ui-hairline-soft);
+    text-align: left;
+    vertical-align: top;
+    white-space: normal;
+    overflow-wrap: break-word;
+}
+
+.message .md-table th:last-child,
+.message .md-table td:last-child {
+    border-right: none;
+}
+
+.message .md-table thead th {
+    background: var(--ui-primary-soft);
+    font-weight: 700;
+    color: var(--text);
+}
+
+.message .md-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.message .md-table tbody tr:nth-child(even) td {
+    background: rgba(127, 140, 170, 0.06);
+}
+
+/* ------------------------------------------------------------------
+   9. BARRA SUPERIOR (móvil): una línea, etiquetas legibles
+   ------------------------------------------------------------------ */
+@media (max-width: 640px) {
+    .topbar {
+        padding: 0 10px;
+        gap: 6px;
+        flex-wrap: nowrap;
+    }
+
+    .topbar-brand {
+        display: none;
+    }
+
+    .topbar-actions {
+        flex: 1 1 auto;
+        justify-content: flex-end;
+        gap: 4px;
+        min-width: 0;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .topbar-actions::-webkit-scrollbar { height: 0; }
+
+    .topbar-btn {
+        font-size: 0.72rem;
+        gap: 4px;
+        padding: 6px 8px;
+        flex: 0 0 auto;
+    }
+
+    .topbar-btn span {
+        font-size: 0.85rem;
+        line-height: 1;
+    }
+
+    .topbar-btn span:last-child:not(:first-child) {
+        display: inline !important;
+        white-space: nowrap;
+    }
+
+    .topbar-user {
+        display: none;   /* ahorra ancho; el nombre está en la sesión */
+    }
+
+    /* Panel de materias en 2 columnas: nombres completos sin scroll */
+    .prompt-box .options-menu {
+        width: 100%;
+    }
+
+    .prompt-box .options-menu .subjects-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .prompt-box .options-menu .subject-button {
+        min-height: 46px;
+        padding: 6px 9px;
+    }
+
+    .prompt-box .options-menu .subject-name {
+        font-size: 0.78rem;
+    }
+}
+
+/* ------------------------------------------------------------------
+   10. VENTANAS BAJAS Y MOVIMIENTO REDUCIDO
+   ------------------------------------------------------------------ */
+@media (max-height: 760px) {
+    .prompt-box .options-menu .section-hint {
+        display: none;   /* ayuda secundaria: libera alto */
+    }
+
+    .prompt-box .options-menu .section-title {
+        font-size: 0.66rem;
+        margin-bottom: 4px;
+    }
+
+    .prompt-box .options-menu .subject-button {
+        min-height: 40px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    /* El color de la materia se conserva; el movimiento no. */
+    .prompt-box .options-menu .subject-button::before,
+    html.ui-turno .send-button svg,
+    .plus-button:hover .plus-icon,
+    .plus-button:focus-visible .plus-icon {
+        animation: none !important;
+        transform: none !important;
+        transition: none !important;
+    }
+}
+/* ------------------------------------------------------------------
+   PROPORCIÓN DE LA PANTALLA DE INICIO
+   El hueco superior venía de sumar el padding de .page (84 px por la barra
+   fija + 54 del diseño original) y el margen de la bienvenida. Se compacta
+   para que el contenido empiece a una altura natural.
+   ------------------------------------------------------------------ */
+.page {
+    padding-top: 76px !important;
+}
+
+.welcome-screen {
+    margin-bottom: 18px !important;
+    padding-top: 0 !important;
+}
+
+.welcome {
+    margin-bottom: 6px !important;
+}
+
+/* Titular: degradado legible en ambos temas y sin recortes de tildes */
+.headline {
+    display: block;
+    padding-bottom: 0.06em;
+}
+/* ------------------------------------------------------------------
+   ACABADO DE LA PANTALLA DE INICIO
+   · El compositor no muestra el anillo de foco mientras no se interactúa
+     (antes quedaba un contorno azul fijo desde la carga).
+   · Icono de Herramientas centrado y alineado con el "+".
+   ------------------------------------------------------------------ */
+.prompt-box:not(:focus-within) {
+    border-color: var(--ui-hairline);
+    box-shadow: var(--ui-shadow-md);
+}
+
+.tools-button .sliders-icon {
+    display: block;
+    margin: 0;
+    transform: translateY(-0.5px);
+}
+
+/* Emoji de materia: tamaño y caja propios para que no se solapen con el
+   texto ni con el borde de la tarjeta. */
+.chip-emoji {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+    line-height: 1;
 }

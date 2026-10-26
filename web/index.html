@@ -66,7 +66,9 @@
             <h1 class="headline">¿Qué quieres aprender hoy?</h1>
         </div>
 
-        <!-- Caja de prompt principal -->
+        <!-- Caja de prompt principal.
+             El panel de materias vive DENTRO de este contenedor: se ancla bajo
+             el botón "+" y así queda siempre dentro de la pantalla. -->
         <section class="prompt-box">
             <label class="sr-only" for="messageInput">Escribe tu pregunta</label>
             <textarea
@@ -75,171 +77,150 @@
                 rows="1"
                 placeholder="Pregúntame lo que quieras aprender…"
                 aria-label="Escribe tu pregunta"
-                aria-describedby="inputHint"
                 autocomplete="off"
             ></textarea>
-            <span id="inputHint" class="sr-only">Pulsa Enter para enviar y Shift+Enter para una nueva línea.</span>
 
             <div class="prompt-actions">
                 <div class="left-actions">
                     <!-- Botón "+" para desplegar opciones de materias -->
-                    <button class="icon-button" id="optionsButton" aria-label="Opciones de estudio">
-                        <span class="plus-icon">+</span>
+                    <button class="icon-button plus-button" id="optionsButton" type="button"
+                            aria-label="Opciones de estudio" aria-expanded="false" aria-controls="optionsMenu">
+                        <span class="plus-icon" aria-hidden="true">+</span>
                     </button>
 
-                    <!-- Botón de Herramientas -->
-                    <button class="text-button" id="toolsButton" aria-label="Herramientas">
-                        <span class="sliders-icon">
-                            <i></i>
-                            <b></b>
-                        </span>
-                        <span class="small">Herramientas</span>
-                    </button>
+                    <!-- Herramientas: solo icono + tooltip accesible -->
+                    <span class="tools-trigger">
+                        <button class="icon-button tools-button" id="toolsButton" type="button"
+                                aria-label="Herramientas para aprender"
+                                aria-describedby="toolsTooltip"
+                                aria-expanded="false" aria-controls="toolsMenu">
+                            <span class="sliders-icon" aria-hidden="true">
+                                <i></i>
+                                <b></b>
+                            </span>
+                        </button>
+                        <span class="tools-tooltip" id="toolsTooltip" role="tooltip">Herramientas para aprender</span>
+                    </span>
                 </div>
 
                 <div class="right-actions">
-                    <!-- Botón de micrófono (preparado para futuras fases) -->
-                    <button class="icon-button microphone" id="micButton" aria-label="Micrófono">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="25" height="25">
+                    <!-- Enviar (icono > real; la rotación se activa al enviar) -->
+                    <button class="send-button" id="micButton" type="button" aria-label="Enviar pregunta">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                             stroke-width="2.2" stroke="currentColor" width="22" height="22" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
                         </svg>
                     </button>
                 </div>
             </div>
-        </section>
 
-        <!-- Chips de sugerencias -->
-        <div class="chips" id="suggestionsChips">
-            <div class="chip" data-action="subject" data-subject="matematicas">
-                <span class="emoji">🔢</span> Matemáticas
-            </div>
-            <div class="chip" data-action="subject" data-subject="biologia">
-                <span class="emoji">🔬</span> Biología
-            </div>
-            <div class="chip" data-action="subject" data-subject="ingles">
-                <span class="emoji">🗣️</span> Inglés
-            </div>
-            <div class="chip" data-action="subject" data-subject="quimica">
-                <span class="emoji">⚗️</span> Química
-            </div>
-            <div class="chip" data-action="subject" data-subject="español">
-                <span class="emoji">📖</span> Español
-            </div>
-            <div class="chip" data-action="help">
-                <span class="emoji">🤔</span> Ayúdame a aprender
-            </div>
-            <div class="chip" data-action="icfes">
-                <span class="emoji">📝</span> Preparar ICFES
-            </div>
-        </div>
-
-        <!-- Indicador de materia seleccionada -->
-        <div class="subject-indicator hidden" id="subjectIndicator">
-            <span class="indicator-text" id="indicatorText">Materia no seleccionada</span>
-            <button class="clear-subject" id="clearSubject" aria-label="Limpiar selección">×</button>
-        </div>
-
-        <!-- Indicador de modo de conversación (socrático / ICFES / quiz) -->
-        <div class="mode-indicator" id="modeIndicator">
-            <span class="mode-dot"></span>
-            <span id="modeText">Método socrático activo</span>
-        </div>
-
-        <!-- Menú desplegable de opciones de materias -->
-        <div class="options-menu hidden" id="optionsMenu">
-            <div class="options-menu-content">
-                <section class="menu-section">
-                    <h3 class="section-title">Estudiar materias por separado</h3>
-                    <p class="section-hint">Elige una materia para estudiar con el tutor en ese contexto.</p>
-                    <ul class="subjects-grid" role="list">
-                        <li class="subject-item">
-                            <button class="subject-button" type="button" data-subject="matematicas">
+            <!-- Menú desplegable de opciones de materias (anclado al compositor) -->
+            <div class="options-menu hidden" id="optionsMenu" role="dialog" aria-label="Estudiar materias por separado">
+                <div class="options-menu-content">
+                    <section class="menu-section">
+                        <h3 class="section-title">Estudiar materias por separado</h3>
+                        <p class="section-hint">Elige una materia para estudiar con el tutor en ese contexto.</p>
+                        <ul class="subjects-grid" role="list">
+                        <li class="subject-item" data-subject="matematicas">
+                            <button class="subject-button subject-matematicas" type="button" data-subject="matematicas" aria-pressed="false">
                                 <span class="subject-emoji" aria-hidden="true">🔢</span>
                                 <span class="subject-name">Matemáticas</span>
                             </button>
                         </li>
-                        <li class="subject-item">
-                            <button class="subject-button" type="button" data-subject="biologia">
-                                <span class="subject-emoji" aria-hidden="true">🔬</span>
-                                <span class="subject-name">Biología / Ciencias Naturales</span>
+                        <li class="subject-item" data-subject="biologia">
+                            <button class="subject-button subject-biologia" type="button" data-subject="biologia" aria-label="Biología / Ciencias Naturales" aria-pressed="false"><span class="subject-emoji" aria-hidden="true">🔬</span><span class="subject-name">Biología</span>
                             </button>
                         </li>
-                        <li class="subject-item">
-                            <button class="subject-button" type="button" data-subject="fisica">
+                        <li class="subject-item" data-subject="fisica">
+                            <button class="subject-button subject-fisica" type="button" data-subject="fisica" aria-pressed="false">
                                 <span class="subject-emoji" aria-hidden="true">⚛️</span>
                                 <span class="subject-name">Física</span>
                             </button>
                         </li>
-                        <li class="subject-item">
-                            <button class="subject-button" type="button" data-subject="quimica">
+                        <li class="subject-item" data-subject="quimica">
+                            <button class="subject-button subject-quimica" type="button" data-subject="quimica" aria-pressed="false">
                                 <span class="subject-emoji" aria-hidden="true">⚗️</span>
                                 <span class="subject-name">Química</span>
                             </button>
                         </li>
-                        <li class="subject-item">
-                            <button class="subject-button" type="button" data-subject="sociales">
-                                <span class="subject-emoji" aria-hidden="true">🌍</span>
-                                <span class="subject-name">Ciencias Sociales / Historia / Geografía</span>
+                        <li class="subject-item" data-subject="sociales">
+                            <button class="subject-button subject-sociales" type="button" data-subject="sociales" aria-label="Ciencias Sociales / Historia / Geografía" aria-pressed="false"><span class="subject-emoji" aria-hidden="true">🌍</span><span class="subject-name">Sociales</span>
                             </button>
                         </li>
-                        <li class="subject-item">
-                            <button class="subject-button" type="button" data-subject="español">
-                                <span class="subject-emoji" aria-hidden="true">📖</span>
-                                <span class="subject-name">Español / Lengua Castellana / Literatura</span>
+                        <li class="subject-item" data-subject="español">
+                            <button class="subject-button subject-espanol" type="button" data-subject="español" aria-label="Español / Lengua Castellana / Literatura" aria-pressed="false"><span class="subject-emoji" aria-hidden="true">📖</span><span class="subject-name">Español</span>
                             </button>
                         </li>
-                        <li class="subject-item">
-                            <button class="subject-button" type="button" data-subject="filosofia">
+                        <li class="subject-item" data-subject="filosofia">
+                            <button class="subject-button subject-filosofia" type="button" data-subject="filosofia" aria-pressed="false">
                                 <span class="subject-emoji" aria-hidden="true">🤔</span>
                                 <span class="subject-name">Filosofía</span>
                             </button>
                         </li>
-                        <li class="subject-item">
-                            <button class="subject-button" type="button" data-subject="informatica">
-                                <span class="subject-emoji" aria-hidden="true">💻</span>
-                                <span class="subject-name">Informática / Tecnología</span>
+                        <li class="subject-item" data-subject="informatica">
+                            <button class="subject-button subject-informatica" type="button" data-subject="informatica" aria-label="Informática / Tecnología" aria-pressed="false"><span class="subject-emoji" aria-hidden="true">💻</span><span class="subject-name">Tecnología</span>
                             </button>
                         </li>
-                        <li class="subject-item">
-                            <button class="subject-button" type="button" data-subject="ingles">
-                                <span class="subject-emoji" aria-hidden="true">🗣️</span>
-                                <span class="subject-name">Inglés / Lenguas Extranjeras</span>
+                        <li class="subject-item" data-subject="ingles">
+                            <button class="subject-button subject-ingles" type="button" data-subject="ingles" aria-label="Inglés / Lenguas Extranjeras" aria-pressed="false"><span class="subject-emoji" aria-hidden="true">🗣️</span><span class="subject-name">Inglés</span>
                             </button>
                         </li>
-                        <li class="subject-item">
-                            <button class="subject-button" type="button" data-subject="arte">
-                                <span class="subject-emoji" aria-hidden="true">🎨</span>
-                                <span class="subject-name">Arte / Educación Artística</span>
+                        <li class="subject-item" data-subject="arte">
+                            <button class="subject-button subject-arte" type="button" data-subject="arte" aria-label="Arte / Educación Artística" aria-pressed="false"><span class="subject-emoji" aria-hidden="true">🎨</span><span class="subject-name">Arte</span>
                             </button>
                         </li>
-                        <li class="subject-item">
-                            <button class="subject-button" type="button" data-subject="educacion-fisica">
-                                <span class="subject-emoji" aria-hidden="true">⚽</span>
-                                <span class="subject-name">Educación Física / Deportes</span>
+                        <li class="subject-item" data-subject="educacion-fisica">
+                            <button class="subject-button subject-educacion-fisica" type="button" data-subject="educacion-fisica" aria-label="Educación Física / Deportes" aria-pressed="false"><span class="subject-emoji" aria-hidden="true">⚽</span><span class="subject-name">Ed. Física</span>
                             </button>
                         </li>
-                        <li class="subject-item">
-                            <button class="subject-button" type="button" data-subject="religion">
+                        <li class="subject-item" data-subject="religion">
+                            <button class="subject-button subject-religion" type="button" data-subject="religion" aria-pressed="false">
                                 <span class="subject-emoji" aria-hidden="true">✅</span>
                                 <span class="subject-name">Religión</span>
                             </button>
                         </li>
-                    </ul>
-                </section>
+                        </ul>
+                    </section>
 
-                <div class="menu-divider"></div>
+                    <div class="menu-divider"></div>
 
-                <section class="menu-section">
-                    <h3 class="section-title">Preparación para pruebas</h3>
-                    <ul class="subjects-grid" role="list">
-                        <li class="subject-item">
-                            <button class="subject-button icfes-button" type="button" data-subject="icfes">
-                                <span class="subject-emoji" aria-hidden="true">📝</span>
-                                <span class="subject-name">ICFES</span>
-                            </button>
-                        </li>
-                    </ul>
-                </section>
+                    <section class="menu-section">
+                        <h3 class="section-title">Preparación para pruebas</h3>
+                        <ul class="subjects-grid" role="list">
+                            <li class="subject-item" data-subject="icfes">
+                                <button class="subject-button subject-icfes" type="button" data-subject="icfes" aria-pressed="false">
+                                    <span class="subject-emoji" aria-hidden="true">📝</span>
+                                    <span class="subject-name">ICFES</span>
+                                </button>
+                            </li>
+                        </ul>
+                    </section>
+                </div>
+            </div>
+        </section>
+
+        <!-- Chips de sugerencias (tarjetas de materia) -->
+        <div class="chips" id="suggestionsChips">
+            <button class="chip" type="button" data-action="subject" data-subject="matematicas"><span class="chip-emoji" aria-hidden="true">🔢</span> <span class="chip-label">Matemáticas</span></button>
+            <button class="chip" type="button" data-action="subject" data-subject="biologia"><span class="chip-emoji" aria-hidden="true">🔬</span> <span class="chip-label">Biología</span></button>
+            <button class="chip" type="button" data-action="subject" data-subject="ingles"><span class="chip-emoji" aria-hidden="true">🗣️</span> <span class="chip-label">Inglés</span></button>
+            <button class="chip" type="button" data-action="subject" data-subject="quimica"><span class="chip-emoji" aria-hidden="true">⚗️</span> <span class="chip-label">Química</span></button>
+            <button class="chip" type="button" data-action="subject" data-subject="español"><span class="chip-emoji" aria-hidden="true">📖</span> <span class="chip-label">Español</span></button>
+            <button class="chip" type="button" data-action="help"><span class="chip-emoji" aria-hidden="true">🤔</span> <span class="chip-label">Ayúdame a aprender</span></button>
+            <button class="chip" type="button" data-action="icfes"><span class="chip-emoji" aria-hidden="true">📝</span> <span class="chip-label">Preparar ICFES</span></button>
+        </div>
+
+        <!-- Fila de estado: materia elegida + modo de conversación.
+             Va en el flujo (no flotando sobre el compositor). -->
+        <div class="status-row">
+            <div class="subject-indicator hidden" id="subjectIndicator">
+                <span class="indicator-text" id="indicatorText">Materia no seleccionada</span>
+                <button class="clear-subject" id="clearSubject" type="button" aria-label="Limpiar selección">×</button>
+            </div>
+
+            <div class="mode-indicator" id="modeIndicator">
+                <span class="mode-dot"></span>
+                <span id="modeText">Método socrático activo</span>
             </div>
         </div>
 
