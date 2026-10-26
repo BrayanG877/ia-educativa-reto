@@ -45,10 +45,84 @@ function toggleOptionsMenu() {
     }
 
     if (AppState.isMenuOpen) {
+        // El panel debe estar visible (aunque sea con opacidad 0) y la clase de
+        // cuerpo aplicada antes de medir, para que el espacio extra de la
+        // página ya cuente al decidir hacia dónde abrir y cuánto desplazar.
         elements.optionsMenu.classList.remove('hidden');
+        reflejarEstadoEnBody();
+        ubicarMenuMaterias();
     } else {
         elements.optionsMenu.classList.add('hidden');
     }
+    elements.optionsButton?.setAttribute('aria-expanded', String(!!AppState.isMenuOpen));
+    reflejarEstadoEnBody();
+}
+
+/**
+ * Coloca el panel de materias respecto del compositor.
+ *
+ * El panel está anclado al compositor (position:absolute): queda siempre
+ * dentro de la pantalla en horizontal. En vertical se asegura de que quepa
+ * debajo del campo (desplazando la PÁGINA si hace falta) y, en ventanas muy
+ * bajas, se abre hacia arriba. Nunca se usa scroll interno ni se oculta una
+ * materia.
+ */
+function ubicarMenuMaterias() {
+    const caja = document.querySelector(".prompt-box");
+    const menu = elements.optionsMenu;
+    if (!caja || !menu) return;
+
+    caja.classList.remove("menu-abajo");
+
+    const margen = 16;
+    const altoBarra = 64;                       // barra superior fija + aire
+    const altoVentana = document.documentElement.clientHeight;
+
+    // 1) El compositor y el panel tienen que caber juntos: si el compositor
+    //    está demasiado abajo, se sube (scroll de PÁGINA) lo justo para que
+    //    debajo quede sitio para el panel. Nunca se deja el campo fuera de
+    //    la pantalla.
+    const alturaNecesaria = Math.min(menu.offsetHeight || 260, 300);
+    const cajaRect = caja.getBoundingClientRect();
+    const espacioDebajo = altoVentana - cajaRect.bottom - margen;
+    if (espacioDebajo < alturaNecesaria) {
+        const subir = Math.min(
+            alturaNecesaria - espacioDebajo,
+            Math.max(0, cajaRect.top - altoBarra)       // sin sacarlo por arriba
+        );
+        if (subir > 0) {
+            window.scrollBy({ top: subir, behavior: "auto" });
+        }
+    }
+
+    // 2) Densidad: 3 columnas dan ~150 px por tarjeta (nombre completo).
+    const columnas = 3;
+    menu.style.setProperty("--columnas-materias", String(columnas));
+
+    // 3) Si el panel no entra en el alto disponible, se compacta la rejilla
+    //    hasta que entre completo (sin barra interna ni ocultar materias).
+    let rect = menu.getBoundingClientRect();
+    while (rect.bottom > altoVentana - margen &&
+           parseFloat(getComputedStyle(menu).getPropertyValue("--tarjeta-h")) > 30) {
+        const actual = parseFloat(menu.style.getPropertyValue("--tarjeta-h") || 46);
+        menu.style.setProperty("--tarjeta-h", Math.max(30, actual - 2) + "px");
+        rect = menu.getBoundingClientRect();
+    }
+
+    // 4) Último recurso (ventanas extremas): se abre hacia arriba si allí hay
+    //    sitio, manteniendo siempre el compositor a la vista.
+    if (rect.bottom > altoVentana - margen) {
+        const arriba = caja.getBoundingClientRect().top - altoBarra;
+        if (arriba > Math.min(rect.height, 240)) {
+            caja.classList.add("menu-abajo");
+        }
+    }
+}
+
+function reflejarEstadoEnBody() {
+    document.body.classList.toggle('ui-menu-open', !!AppState.isMenuOpen);
+    document.body.classList.toggle('ui-tools-open', !!AppState.isToolsMenuOpen);
+    document.body.classList.toggle('ui-sending', !!AppState.isSending);
 }
 
 /**
@@ -57,6 +131,10 @@ function toggleOptionsMenu() {
 function closeOptionsMenu() {
     AppState.isMenuOpen = false;
     elements.optionsMenu.classList.add('hidden');
+    elements.optionsButton?.setAttribute('aria-expanded', 'false');
+    // Quita el espacio extra que se añadió para poder desplazar la página
+    document.body.style.removeProperty('--relleno-menu');
+    reflejarEstadoEnBody();
 }
 
 // ===================================
@@ -79,6 +157,8 @@ function toggleToolsMenu() {
     } else {
         elements.toolsMenu.classList.add('hidden');
     }
+    elements.toolsButton?.setAttribute('aria-expanded', String(!!AppState.isToolsMenuOpen));
+    reflejarEstadoEnBody();
 }
 
 /**
@@ -87,6 +167,8 @@ function toggleToolsMenu() {
 function closeToolsMenu() {
     AppState.isToolsMenuOpen = false;
     elements.toolsMenu.classList.add('hidden');
+    elements.toolsButton?.setAttribute('aria-expanded', 'false');
+    reflejarEstadoEnBody();
 }
 
 // ===================================
@@ -112,11 +194,21 @@ function selectSubject(subject, displayName) {
     // Estado accesible de las tarjetas de materias: aria-pressed refleja la
     // selección real para lectores de pantalla (y activa el estilo de la
     // materia elegida). NO se oculta ninguna opción.
-    document.querySelectorAll('.subject-item').forEach(item => {
-        const btn = item.querySelector('.subject-button');
-        if (!btn) return;
-        const esActiva = item.dataset.subject === subject;
-        btn.setAttribute('aria-pressed', esActiva ? 'true' : 'false');
+    //
+    // El data-subject está en el <li class="subject-item"> y también en el
+    // propio botón; antes solo se leía del <li> y las tarjetas no mostraban
+    // cuál estaba seleccionada.
+    document.querySelectorAll('.subject-button').forEach(btn => {
+        const item = btn.closest('.subject-item');
+        const id = item?.dataset.subject || btn.dataset.subject;
+        btn.setAttribute('aria-pressed', id === subject ? 'true' : 'false');
+    });
+
+    // Los chips de sugerencia reflejan la misma selección (mismo lenguaje
+    // visual: borde, relleno y marca ✓).
+    document.querySelectorAll('.chip[data-subject], .chip[data-action="icfes"]').forEach(chip => {
+        const id = chip.dataset.subject || 'icfes';
+        chip.setAttribute('aria-pressed', id === subject ? 'true' : 'false');
     });
 
     // Cerrar menú
@@ -155,6 +247,10 @@ function clearSubjectSelection() {
     AppState.selectedSubject = null;
     elements.subjectIndicator.classList.add('hidden');
     updateModeIndicator();
+    // Quitar la marca de selección de tarjetas y chips (aria-pressed)
+    document.querySelectorAll('.subject-button, .chip[aria-pressed]').forEach(btn => {
+        btn.setAttribute('aria-pressed', 'false');
+    });
 
     console.log('Selección de materia limpiada');
 
@@ -323,6 +419,12 @@ async function handleSendMessage() {
 
     // Marcar como enviando
     AppState.isSending = true;
+    reflejarEstadoEnBody();
+    // La animación de envío se activa UNA vez por envío (en <html>), no en cada
+    // repintado del streaming: ver .send-button en styles.css.
+    document.documentElement.classList.remove('ui-turno');
+    void document.documentElement.offsetWidth; // reinicia la animación
+    document.documentElement.classList.add('ui-turno');
 
     try {
         // Iniciar conversación si es el primer mensaje
@@ -350,6 +452,7 @@ async function handleSendMessage() {
         // Deshabilitar input y botón durante envío
         elements.messageInput.disabled = true;
         elements.micButton.disabled = true;
+        elements.micButton.setAttribute('aria-busy', 'true');
         // Estado visual del compositor mientras el tutor responde
         document.querySelector('.prompt-box')?.classList.add('is-sending');
 
@@ -529,12 +632,14 @@ async function handleSendMessage() {
         // Rehabilitar input y botón
         elements.messageInput.disabled = false;
         elements.micButton.disabled = false;
+        elements.micButton.removeAttribute('aria-busy');
         document.querySelector('.prompt-box')?.classList.remove('is-sending');
         autoAjustarEntrada();
         elements.messageInput.focus();
 
         // Marcar como no enviando
         AppState.isSending = false;
+        reflejarEstadoEnBody();
     }
 }
 
@@ -823,6 +928,11 @@ function handleKeyPress(event) {
     // <textarea>: `keypress` no se dispara en todos los IME/navegadores tras
     // Shift+Enter, y el campo quedaba sin poder enviar.
     if (event.key === 'Enter' && !event.shiftKey) {
+        // Durante la composición de texto (IME: chino, japonés, coreano…) Enter
+        // confirma el candidato y NO debe enviar el mensaje a medio componer.
+        if (event.isComposing || event.keyCode === 229) {
+            return;
+        }
         event.preventDefault();
         handleSendMessage();
     }
@@ -852,8 +962,13 @@ function handleChipClick(chip) {
     const subject = chip.dataset.subject;
 
     if (action === 'subject' && subject) {
-        const subjectName = chip.textContent.trim();
-        selectSubject(subject, subjectName);
+        // El chip contiene emoji + nombre: se toma solo el nombre para el indicador.
+        const nombreVisible = chip.querySelector('.chip-emoji');
+        let subjectName = chip.textContent;
+        if (nombreVisible) {
+            subjectName = chip.textContent.replace(nombreVisible.textContent, '');
+        }
+        selectSubject(subject, subjectName.trim());
     } else if (action === 'icfes') {
         selectSubject('icfes', 'ICFES');
     } else if (action === 'help') {
@@ -912,11 +1027,10 @@ function initializeEventListeners() {
     // Botón de limpiar materia
     elements.clearSubject.addEventListener('click', clearSubjectSelection);
 
-    // Botones de materias
-    elements.subjectButtons.forEach(button => {
+    // Botones de materias (se consulta el DOM en vivo: siempre están todos)
+    document.querySelectorAll('.subject-button').forEach(button => {
         button.addEventListener('click', (event) => {
-            const subjectItem = event.target.closest('.subject-item');
-            const subjectId = subjectItem.dataset.subject;
+            const subjectId = button.dataset.subject || event.target.closest('.subject-item')?.dataset.subject;
             // El botón contiene emoji + nombre: se toma solo el texto del nombre
             // para no mostrar el emoji en el indicador de modo.
             const nombreVisible = button.querySelector('.subject-name');
@@ -964,6 +1078,11 @@ function initializeEventListeners() {
 
     // Cerrar menús al hacer clic fuera
     document.addEventListener('click', handleClickOutside);
+
+    // Reposicionar el panel si cambia el tamaño de la ventana
+    window.addEventListener('resize', () => {
+        if (AppState.isMenuOpen) ubicarMenuMaterias();
+    });
 }
 
 /**
@@ -1288,6 +1407,15 @@ async function handleLogout() {
 
 // Si se migra a módulos ES6 en el futuro:
 // export { AppState, selectSubject, clearSubjectSelection, handleSendMessage, selectTool };
+
+// ===================================
+// ESTADO DE ENVÍO PARA EL CSS
+// ===================================
+//
+// La animación de envío ya se marca en <html>.ui-turno. Esta clase en <body>
+// la usa el compositor para su estado visual (borde y botón).
+document.documentElement.classList.toggle('ui-sending', !!AppState.isSending);
+document.body.classList.toggle('ui-sending', !!AppState.isSending);
 
 // ===================================
 // INICIO DE LA APLICACIÓN
