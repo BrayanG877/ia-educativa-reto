@@ -673,11 +673,13 @@ body {
 
 .prompt-box {
     width: 100%;
-    min-height: 124px;
+    /* Altura dictada por el contenido: el textarea crece con autoAjustarEntrada
+       y no queda un hueco vacío entre el campo y los botones. */
+    min-height: 0;
     background: var(--ui-surface);
     border: 1px solid var(--ui-hairline);
     border-radius: var(--ui-radius-xl);
-    padding: 18px 18px 14px;
+    padding: 14px 16px 12px 18px;
     box-shadow: var(--ui-shadow-md);
     display: flex;
     flex-direction: column;
@@ -1031,8 +1033,6 @@ html.ui-turno .send-button svg {
 }
 
 .chip {
-    position: relative;
-    z-index: -1;      /* siempre por debajo del panel del compositor */
     --mat-accent: var(--ui-primary);
     --mat-accent-deep: var(--ui-primary-strong);
     position: relative;
@@ -2840,4 +2840,61 @@ body.ui-menu-open .status-row {
     flex: 0 0 auto;
     font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
     line-height: 1;
+}
+/* ------------------------------------------------------------------
+   CORRECCIONES VISTAS EN PRODUCCIÓN (3.139.69.85)
+   1) El compositor tenía min-height:124px heredado → hueco vacío entre el
+      campo y los botones.
+   2) .chip declaraba dos veces position:relative y z-index:-1 duplicado, lo
+      que lo mandaba detrás del fondo del compositor y descuadraba la fila.
+   3) El contorno azul del compositor se mostraba sin foco.
+   ------------------------------------------------------------------ */
+.page > section.prompt-box {
+    min-height: 0 !important;
+    padding: 14px 16px 12px 18px !important;
+    background: var(--ui-surface);
+}
+
+.page > section.prompt-box:not(:focus-within) {
+    border-color: var(--ui-hairline) !important;
+    box-shadow: var(--ui-shadow-md) !important;
+}
+
+.page > section.prompt-box:focus-within {
+    border-color: var(--ui-primary) !important;
+    box-shadow: 0 0 0 2px var(--ui-primary-soft), var(--ui-shadow-md) !important;
+}
+
+/* Fila de chips: misma altura y misma línea de base para todas las tarjetas */
+.chips {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    margin-bottom: 8px !important;
+}
+
+.chips > .chip {
+    position: relative !important;
+    z-index: 0 !important;
+    flex: 0 0 auto;
+    align-self: stretch;
+    min-height: 46px;
+    height: 46px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* El emoji va dentro de su caja: evita el salto de línea que descuadraba la
+   fila cuando el nombre ocupaba dos líneas. */
+.chips > .chip .chip-emoji {
+    flex: 0 0 26px;
+    width: 26px;
+    height: 26px;
+}
+
+.chips > .chip .chip-label {
+    white-space: nowrap;
 }
