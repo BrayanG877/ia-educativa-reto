@@ -952,6 +952,11 @@ function initializeEventListeners() {
     if (elements.statsButton) {
         elements.statsButton.addEventListener('click', toggleStatsPanel);
     }
+    if (elements.teacherStatsButton) {
+        elements.teacherStatsButton.addEventListener('click', () => {
+            window.location.href = obtenerRutaPanelDocente();
+        });
+    }
     if (elements.logoutButton) {
         elements.logoutButton.addEventListener('click', handleLogout);
     }
@@ -992,13 +997,13 @@ function captureElements() {
         newConversationButton: document.getElementById('newConversationButton'),
         historyButton: document.getElementById('historyButton'),
         statsButton: document.getElementById('statsButton'),
+        teacherStatsButton: document.getElementById('teacherStatsButton'),
         logoutButton: document.getElementById('logoutButton'),
         historyPanel: document.getElementById('historyPanel'),
         historyList: document.getElementById('historyList'),
         historyClose: document.getElementById('historyClose'),
         statsPanel: document.getElementById('statsPanel'),
         statsList: document.getElementById('statsList'),
-        statsClose: document.getElementById('statsClose'),
         userName: document.getElementById('userName'),
         userAvatar: document.getElementById('userAvatar'),
         modeText: document.getElementById('modeText')
@@ -1065,6 +1070,41 @@ async function renderUserBadge() {
     const label = user?.fullName || user?.username || user?.email || 'Estudiante';
     if (elements.userName) elements.userName.textContent = label;
     if (elements.userAvatar) elements.userAvatar.textContent = (label.trim()[0] || '?').toUpperCase();
+
+    // El rol viene del backend (no se asume): solo la cuenta de profesor ve
+    // el botón "Estadísticas", que lleva al panel docente.
+    renderTeacherAccess(user);
+}
+
+/**
+ * Mostrar el acceso al panel docente cuando la cuenta es de profesor.
+ * El rol se lee de la sesión guardada por el backend; si no hay rol
+ * reconocible, el botón queda oculto (por defecto, estudiante).
+ */
+function renderTeacherAccess(user) {
+    if (!elements.teacherStatsButton) return;
+    const esProfesor = (user?.role || '').toString().toLowerCase() === 'teacher';
+    elements.teacherStatsButton.classList.toggle('hidden', !esProfesor);
+}
+
+/**
+ * Destino del botón "Estadísticas".
+ * En producción el panel está en web/teacher.html (junto a index.html);
+ * en las vistas previas locales el panel se sirve como preview/docente.html.
+ *
+ * La ruta se resuelve SIEMPRE absoluta: si se devolviera un nombre relativo
+ * ('docente.html'), el navegador lo resolvería contra la carpeta actual, así
+ * que desde /preview/index-docente.html sí funcionaría pero desde cualquier
+ * otra vista previa (p. ej. /preview/index.html) apuntaría a una página
+ * inexistente. Con una ruta absoluta el destino no depende de dónde esté la
+ * página que contiene el botón.
+ */
+function obtenerRutaPanelDocente() {
+    // preview/index*.html marca la página con __VISTA_PREVIA__ antes de cargar
+    // este script; ahí el panel docente se sirve como preview/docente.html.
+    const enVistaPrevia = window.__VISTA_PREVIA__ === true ||
+        /\/preview\//.test(window.location.pathname);
+    return enVistaPrevia ? '/preview/docente.html' : '/teacher.html';
 }
 
 // ===================================
@@ -1185,37 +1225,67 @@ async function toggleStatsPanel() {
 
     let html = '';
 
+    // Encabezado: identidad del estudiante + icono de cerrar.
+    // Se pinta una sola vez, en el contenedor del panel.
+    const usuario = (typeof authManager !== 'undefined' && authManager.getUser) ? authManager.getUser() : null;
+    const nombreUsuario = usuario?.fullName || usuario?.username || usuario?.email || 'Estudiante';
+    const inicial = (String(nombreUsuario).trim()[0] || '?').toUpperCase();
+
+    const cabecera = elements.statsPanel.querySelector('.side-panel-head');
+    if (cabecera) {
+        cabecera.innerHTML = `<div class="progress-id">
+            <span class="progress-avatar" aria-hidden="true">${escapeHtml(inicial)}</span>
+            <div class="progress-id-text">
+                <span class="progress-title">Mi progreso</span>
+                <span class="progress-sub">${escapeHtml(nombreUsuario)}</span>
+            </div>
+        </div>
+        <button class="progress-close" type="button" aria-label="Cerrar panel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                <path d="M5 5L19 19M5 19L19 5"/>
+            </svg>
+        </button>`;
+        cabecera.querySelector('.progress-close').addEventListener('click', closeSidePanels);
+    }
+
     if (stats && stats.stats) {
         const s = stats.stats;
-        html += `<div class="stats-grid">
-            <div class="stat-card"><span class="stat-value">${s.total_conversations ?? 0}</span><span class="stat-label">Conversaciones</span></div>
-            <div class="stat-card"><span class="stat-value">${s.total_messages ?? 0}</span><span class="stat-label">Mensajes</span></div>
-            <div class="stat-card"><span class="stat-value">${s.total_tokens_used ?? 0}</span><span class="stat-label">Tokens usados</span></div>
+        html += `<div class="progress-stats">
+            <div class="progress-stat"><span class="progress-stat-value">${s.total_conversations ?? 0}</span><span class="progress-stat-label">Conversaciones</span></div>
+            <div class="progress-stat"><span class="progress-stat-value">${s.total_messages ?? 0}</span><span class="progress-stat-label">Mensajes</span></div>
         </div>`;
     } else {
         html += '<p class="side-panel-empty">No hay estadísticas todavía. ¡Haz tu primera pregunta!</p>';
     }
 
     if (stats && Array.isArray(stats.topSubjects) && stats.topSubjects.length > 0) {
-        html += '<h4 class="side-panel-subtitle">Materias más usadas</h4><ul class="stats-list">';
+        html += '<section class="progress-section"><h4 class="side-panel-subtitle">Materias más usadas</h4><ul class="stats-list">';
         stats.topSubjects.forEach(s => {
             html += `<li><span>${escapeHtml(s.emoji || '•')} ${escapeHtml(s.name || s.code)}</span><b>${s.conversation_count ?? 0}</b></li>`;
         });
-        html += '</ul>';
+        html += '</ul></section>';
     }
 
+    // Ranking: tarjeta modular que crece con el número de participantes
     if (ranking && Array.isArray(ranking.ranking)) {
-        html += '<h4 class="side-panel-subtitle">🏆 Ranking</h4>';
+        html += '<section class="progress-section"><h4 class="side-panel-subtitle">🏆 Ranking</h4>';
         if (ranking.ranking.length === 0) {
             html += '<p class="side-panel-empty">El ranking está vacío todavía.</p>';
         } else {
-            html += '<ul class="stats-list">';
+            html += '<ol class="ranking-list">';
             ranking.ranking.forEach((r, i) => {
                 const nombre = r.username || r.full_name || 'Estudiante';
-                html += `<li><span>${i + 1}. ${escapeHtml(nombre)}</span><b>${r.total_messages ?? r.score ?? 0}</b></li>`;
+                const esYo = !!usuario && nombre === (usuario.username || usuario.fullName);
+                const puntos = Number(r.score);
+                html += `<li class="ranking-row${esYo ? ' is-me' : ''}">
+                    <span class="ranking-pos">${i + 1}</span>
+                    <span class="ranking-name">${escapeHtml(nombre)}</span>
+                    <span class="ranking-score">${Number.isFinite(puntos) ? Math.round(puntos * 10) / 10 : 0}<small> pts</small></span>
+                </li>`;
             });
-            html += '</ul>';
+            html += '</ol>';
         }
+        html += '</section>';
     }
 
     elements.statsList.innerHTML = html;
