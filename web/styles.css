@@ -462,7 +462,11 @@ body {
     display: none;
 }
 
+/* "Bienvenido": marcador azul antes del texto (diseño de referencia) */
 .welcome {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
     font-size: 22px;
     font-weight: 500;
     color: var(--text);
@@ -470,12 +474,27 @@ body {
     letter-spacing: -0.02em;
 }
 
+.welcome-dot {
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #63b3ed;
+    box-shadow: 0 0 10px rgba(99, 179, 237, 0.65);
+}
+
+/* Título grande con el degradado de la solución de referencia */
 .headline {
     font-size: clamp(40px, 5vw, 56px);
     line-height: 1.05;
     font-weight: 500;
     margin-bottom: 0;
     letter-spacing: -0.04em;
+    color: #eaf4ff;
+    background: linear-gradient(92deg, #ffffff 0%, #d8ecff 42%, #8ec8f5 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 /* ===================================
@@ -497,10 +516,10 @@ body {
     transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
-/* Estado focus claramente visible en todo el compositor, no solo en el caret */
+/* Estado focus: sin contorno azul en el compositor (solo el caret visible) */
 .prompt-box:focus-within {
-    border-color: rgba(99, 179, 237, 0.55);
-    box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.14), var(--shadow);
+    border-color: transparent;
+    box-shadow: var(--shadow);
 }
 
 .prompt-input {
@@ -598,6 +617,33 @@ body {
     font-size: 24px;
     font-weight: 300;
     line-height: 1;
+    display: inline-block;
+    transition: transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Botón "+": círculo sutil y giro al pasar el cursor (estilo
+   asistente: el icono rota sobre su centro, el botón no se escala). */
+#optionsButton {
+    position: relative;
+    transition: background-color 200ms ease, box-shadow 200ms ease;
+}
+
+#optionsButton:hover {
+    transform: none;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+#optionsButton:hover .plus-icon {
+    transform: rotate(90deg);
+}
+
+#optionsButton:active {
+    transform: none;
+    background: rgba(255, 255, 255, 0.14);
+}
+
+#optionsButton:active .plus-icon {
+    transform: rotate(90deg) scale(0.92);
 }
 
 .text-button span.small {
@@ -657,6 +703,38 @@ body {
     line-height: 1;
 }
 
+/* Botón de envío (">"): al pasar el cursor aparece un círculo azul
+   proporcional al icono; el trazo se mantiene blanco. */
+#micButton {
+    border: 1px solid transparent;
+    box-sizing: border-box;
+    transition: background-color 200ms ease, border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+
+#micButton svg {
+    color: #ffffff;
+}
+
+@media (hover: hover) {
+    #micButton:hover {
+        transform: none;
+        /* Relleno y contorno en el mismo azul claro, sin transparencia */
+        background: #4a9eff;
+        border: 1px solid #4a9eff;
+        box-shadow: 0 2px 8px rgba(74, 158, 255, 0.3);
+    }
+
+    #micButton:hover svg {
+        color: #ffffff;
+    }
+}
+
+#micButton:active {
+    transform: scale(0.94);
+    background: #3d8ce0;
+    border-color: #3d8ce0;
+}
+
 /* ===================================
    CHIPS DE SUGERENCIAS
    =================================== */
@@ -685,10 +763,17 @@ body {
     transition: var(--transition);
 }
 
-.chip:hover {
-    background: #282828;
-    border-color: rgba(255,255,255,0.08);
-    transform: translateY(-2px);
+/* Al pasar el cursor la pastilla se aclara ligeramente */
+@media (hover: hover) {
+    .chip:hover {
+        background: #343434;
+        border-color: rgba(255,255,255,0.14);
+        transform: translateY(-2px);
+    }
+
+    .chip:hover .chip-emoji {
+        filter: brightness(1.15);
+    }
 }
 
 .chip:active {
@@ -891,6 +976,107 @@ body {
     flex: 1;
 }
 
+/* Botones de materias: mismo realce 3D al pasar el cursor que los de
+   Herramientas (elevación + sombra). Solo visual. */
+.options-menu .subject-button {
+    transition:
+        transform 140ms ease,
+        box-shadow 180ms ease,
+        border-color 180ms ease,
+        background-color 180ms ease;
+}
+
+@media (hover: hover) {
+    .options-menu .subject-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    }
+}
+
+.options-menu .subject-button:active {
+    transform: scale(0.98);
+}
+
+/* Hover propio del ICFES: conserva el azul, sin gris de fondo */
+.options-menu .icfes-button:hover {
+    background: rgba(74, 158, 255, 0.15);
+    border-color: rgba(74, 158, 255, 0.4);
+}
+
+/* ------------------------------------------------------------------
+   Menú "+" (materias): misma estructura visual que el de Herramientas
+   (lista de filas con icono + nombre) más la flecha ">" que aparece y
+   se desplaza en azul al pasar el cursor. Solo estilos: los datos
+   (data-subject) y los manejadores de app.js no cambian.
+   ------------------------------------------------------------------ */
+
+.options-menu .subject-item {
+    position: relative;
+}
+
+.options-menu .subject-emoji {
+    display: inline-grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 20px;
+    font-size: 20px;
+    line-height: 1;
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+}
+
+.options-menu .subject-name {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* Al pasar el cursor: la fila se aclara y el emoji crece levemente */
+@media (hover: hover) {
+    .options-menu .subject-button:hover .subject-emoji {
+        transform: scale(1.08);
+    }
+}
+
+/* Materia activa: se marca con un ✓ junto al nombre */
+.options-menu .subject-button[aria-pressed="true"] .subject-name::after {
+    content: ' ✓';
+    color: #63b3ed;
+    font-weight: 700;
+}
+
+/* Scrollbar del menú "+": fina y discreta, acorde al recuadro */
+.options-menu {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+.options-menu::-webkit-scrollbar {
+    width: 5px;
+}
+
+.options-menu::-webkit-scrollbar:vertical {
+    width: 5px;
+    background: transparent;
+}
+
+.options-menu::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 16px 0;
+}
+
+.options-menu::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+}
+
+.options-menu::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.options-menu::-webkit-scrollbar-button {
+    display: none;
+    height: 0;
+}
+
 /* Separador entre secciones */
 .menu-divider {
     height: 1px;
@@ -903,26 +1089,22 @@ body {
    =================================== */
 
 .messages-area::-webkit-scrollbar,
-.options-menu::-webkit-scrollbar,
 .tools-menu::-webkit-scrollbar {
     width: 8px;
 }
 
 .messages-area::-webkit-scrollbar-track,
-.options-menu::-webkit-scrollbar-track,
 .tools-menu::-webkit-scrollbar-track {
     background: transparent;
 }
 
 .messages-area::-webkit-scrollbar-thumb,
-.options-menu::-webkit-scrollbar-thumb,
 .tools-menu::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.15);
     border-radius: 4px;
 }
 
 .messages-area::-webkit-scrollbar-thumb:hover,
-.options-menu::-webkit-scrollbar-thumb:hover,
 .tools-menu::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.25);
 }
@@ -1068,6 +1250,77 @@ body {
     color: #ffb4b4;
 }
 
+/* -----------------------------------
+   BOTÓN HOLOGRÁFICO "Estadísticas"
+   Solo lo ve la cuenta de profesor. Mismo azul que el icono "→"
+   del panel docente (--primary del panel: #63b3ed).
+   ----------------------------------- */
+
+.holographic-btn {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #11161d;
+    border: 1px solid rgba(99, 179, 237, 0.45);
+    border-radius: 10px;
+    padding: 7px 16px;
+    cursor: pointer;
+    transition: transform 0.5s ease, box-shadow 0.5s ease, border-color 0.5s ease;
+}
+
+.holographic-btn .holographic-text {
+    position: relative;
+    z-index: 2;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    color: #63b3ed;
+    text-shadow: 0 0 10px rgba(99, 179, 237, 0.45);
+}
+
+/* Barrido de luz que cruza la tarjeta al pasar el cursor */
+.holographic-btn::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        0deg,
+        transparent,
+        transparent 30%,
+        rgba(99, 179, 237, 0.3)
+    );
+    transform: rotate(-45deg);
+    transition: all 0.5s ease;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.holographic-btn:hover {
+    transform: scale(1.05);
+    border-color: rgba(99, 179, 237, 0.8);
+    box-shadow: 0 0 20px rgba(99, 179, 237, 0.5);
+}
+
+.holographic-btn:hover::before {
+    opacity: 1;
+    transform: rotate(-45deg) translateY(100%);
+}
+
+.holographic-btn:focus-visible {
+    outline: 2px solid #63b3ed;
+    outline-offset: 3px;
+}
+
+.holographic-btn:active {
+    transform: scale(0.98);
+}
+
 .topbar-user {
     display: inline-flex;
     align-items: center;
@@ -1205,6 +1458,267 @@ body {
     margin: 18px 4px 8px;
 }
 
+/* ------------------------------------------------------------------
+   PANEL "MI PROGRESO" (modular, tarjeta redondeada)
+   Crece con el contenido en lugar de ocupar toda la altura.
+   ------------------------------------------------------------------ */
+
+.side-panel.progress-panel {
+    top: 72px;
+    right: 16px;
+    width: 340px;
+    height: auto;
+    max-height: calc(100vh - 96px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #242424 0%, #1c1c1c 100%);
+    box-shadow: -8px 12px 40px rgba(0,0,0,0.45);
+}
+
+.side-panel.progress-panel .side-panel-body {
+    padding: 0;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.14) transparent;
+}
+
+.side-panel.progress-panel .side-panel-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.side-panel.progress-panel .side-panel-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.side-panel.progress-panel .side-panel-body::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+}
+
+/* --- Encabezado -------------------------------------------------- */
+.side-panel.progress-panel .side-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.side-panel.progress-panel .side-panel-head h3 {
+    font-size: 15px;
+    font-weight: 650;
+}
+
+.progress-id {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+}
+
+.progress-avatar {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 17px;
+    font-weight: 600;
+    color: #0b1620;
+    background: linear-gradient(140deg, #9fd8ff 0%, #4a9eff 100%);
+    box-shadow: 0 4px 12px rgba(74, 158, 255, 0.25);
+}
+
+.progress-id-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.progress-title {
+    font-size: 15px;
+    font-weight: 650;
+    color: var(--text);
+    line-height: 1.2;
+}
+
+.progress-sub {
+    font-size: 12.5px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.progress-close {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background-color 160ms ease, color 160ms ease;
+}
+
+.progress-close:hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--text);
+}
+
+/* --- Estadísticas ----------------------------------------------- */
+.progress-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 16px 16px 0;
+}
+
+.progress-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.035);
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.progress-stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: #9fd8ff;
+    letter-spacing: -0.02em;
+}
+
+.progress-stat-label {
+    font-size: 11.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+/* --- Secciones ---------------------------------------------------- */
+.progress-section {
+    padding: 0 16px 16px;
+}
+
+.progress-section .side-panel-subtitle {
+    margin: 16px 0 8px;
+}
+
+/* --- Ranking ------------------------------------------------------ */
+.ranking-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    counter-reset: none;
+}
+
+.ranking-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: background-color 160ms ease, border-color 160ms ease, transform 160ms ease;
+}
+
+.ranking-row:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.1);
+    transform: translateX(2px);
+}
+
+.ranking-pos {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    border-radius: 7px;
+    display: grid;
+    place-items: center;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--muted);
+    background: rgba(255,255,255,0.05);
+}
+
+.ranking-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 13.5px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ranking-score {
+    flex: 0 0 auto;
+    font-size: 13px;
+    font-weight: 700;
+    color: #8ea2ff;
+    font-variant-numeric: tabular-nums;
+}
+
+.ranking-score small {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-left: -2px;
+}
+
+/* Podio: los tres primeros con su propio acento */
+.ranking-row:nth-child(1) .ranking-pos {
+    color: #0b1620;
+    background: linear-gradient(140deg, #ffe08a 0%, #f5c542 100%);
+    box-shadow: 0 2px 8px rgba(245, 197, 66, 0.25);
+}
+
+.ranking-row:nth-child(2) .ranking-pos {
+    color: #0b1620;
+    background: linear-gradient(140deg, #e6ecf5 0%, #b9c6d8 100%);
+}
+
+.ranking-row:nth-child(3) .ranking-pos {
+    color: #1c1206;
+    background: linear-gradient(140deg, #e8b98c 0%, #c98f5a 100%);
+}
+
+.ranking-row:nth-child(1) {
+    border-color: rgba(245, 197, 66, 0.22);
+    background: rgba(245, 197, 66, 0.06);
+}
+
+/* Fila del estudiante actual */
+.ranking-row.is-me {
+    border-color: rgba(99, 179, 237, 0.45);
+    background: rgba(99, 179, 237, 0.1);
+}
+
+/* --- Responsive --------------------------------------------------- */
+@media (max-width: 640px) {
+    .side-panel.progress-panel {
+        top: 64px;
+        right: 8px;
+        left: 8px;
+        width: auto;
+        max-width: none;
+        max-height: calc(100vh - 80px);
+    }
+}
+
 /* Lista de conversaciones */
 .history-item {
     width: 100%;
@@ -1289,6 +1803,8 @@ body {
 @media (max-width: 640px) {
     .topbar-btn span:last-child:not(:first-child) { display: none; }
     .topbar-user .user-name { display: none; }
+    .holographic-btn { padding: 6px 10px; }
+    .holographic-btn .holographic-text { font-size: 12px; }
 }
 
 /* ==================================================================
