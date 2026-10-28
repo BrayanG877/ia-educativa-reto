@@ -191,3 +191,20 @@ coverage/
 /backend/*.log
 # Respaldos locales creados durante auditorías/mantenimiento
 /.git-backup-*/
+
+# ------------------------------------------------------------------
+# Utilidades locales de QA/despliegue (no forman parte del producto).
+# Los scripts de despliegue guardan capturas, llaves de sesión y hashes
+# de la instancia concreta; la vista previa sirve archivos desde la raíz
+# del proyecto y solo tiene sentido en local.
+# ------------------------------------------------------------------
+/.deploy/
+/.qa/
+/.ui-captures/
+/preview/
+/qa-browser.cjs
+/qa-roles.cjs
+/backend/_diag_*.js
+/backend/_test_*.js
+/backend/test/diag-*.tmp.js
+/web/*.tmp.css

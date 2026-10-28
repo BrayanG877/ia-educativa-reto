@@ -23,12 +23,12 @@ const crypto = require('crypto');
 // Se basan en el TEXTO del mensaje (evidencia observable), no en supuestos.
 
 const INTENCIONES = [
-    { id: 'pide_respuesta',  re: /\b(dame|escribe|cu[aá]l es)\s+(la\s+)?(respuesta|soluci[oó]n|resultado)\b|resu[eé]lve(lo|me)?|haz(me)?\s+(la\s+)?tarea/i },
-    { id: 'no_entiende',     re: /\bno\s+(entiendo|comprendo|me\s+queda\s+claro)|\bno\s+s[eé]\b|estoy\s+perdid|confundid/i },
+    { id: 'pide_respuesta', re: /\b(dame|escribe|cu[aá]l es)\s+(la\s+)?(respuesta|soluci[oó]n|resultado)\b|resu[eé]lve(lo|me)?|haz(me)?\s+(la\s+)?tarea/i },
+    { id: 'no_entiende', re: /\bno\s+(entiendo|comprendo|me\s+queda\s+claro)|\bno\s+s[eé]\b|estoy\s+perdid|confundid/i },
     { id: 'pide_explicacion', re: /\bexpl[ií]came|explica(me)?\b|\bc[oó]mo\s+funciona|\bpor\s+qu[eé]\b/i },
-    { id: 'pide_ejemplo',    re: /\b(ejemplo|ejemplos)\b|mu[eé]strame\s+uno/i },
-    { id: 'pide_practicar',  re: /\b(ejercicio|practicar|pr[aá]ctica|ponme\s+uno|un\s+reto)\b/i },
-    { id: 'pista',           re: /\b(pista|ayuda|ay[uú]dame)\b/i }
+    { id: 'pide_ejemplo', re: /\b(ejemplo|ejemplos)\b|mu[eé]strame\s+uno/i },
+    { id: 'pide_practicar', re: /\b(ejercicio|practicar|pr[aá]ctica|ponme\s+uno|un\s+reto)\b/i },
+    { id: 'pista', re: /\b(pista|ayuda|ay[uú]dame)\b/i }
 ];
 
 /**
@@ -237,8 +237,8 @@ function planificarTurno({ mensaje, subject, mode, historial = [] }) {
         return {
             action: 'guided_hint',
             guidance: 'El estudiante pide la respuesta. Ofrece el MAYOR andamiaje: ' +
-                      'preguntas encadenadas y una pista concreta. Solo si insiste o ya ' +
-                      'hubo intentos previos, explica el procedimiento paso a paso.',
+                'preguntas encadenadas y una pista concreta. Solo si insiste o ya ' +
+                'hubo intentos previos, explica el procedimiento paso a paso.',
             competence: competenciaDeMateria(subject),
             shouldEvaluate: false,
             evaluateExpected: null
@@ -250,8 +250,8 @@ function planificarTurno({ mensaje, subject, mode, historial = [] }) {
         return {
             action: 'teach',
             guidance: 'El estudiante no comprende. Cambia de estrategia: usa lenguaje ' +
-                      'mas simple, una analogia cotidiana y una pregunta mas concreta. ' +
-                      'No repitas la misma explicacion.',
+                'mas simple, una analogia cotidiana y una pregunta mas concreta. ' +
+                'No repitas la misma explicacion.',
             competence: competenciaDeMateria(subject),
             shouldEvaluate: false,
             evaluateExpected: null
@@ -263,7 +263,7 @@ function planificarTurno({ mensaje, subject, mode, historial = [] }) {
         return {
             action: 'practice',
             guidance: 'Propón UN ejercicio breve y claro, al nivel del estudiante. ' +
-                      'Pide que lo intente antes de dar cualquier resultado.',
+                'Pide que lo intente antes de dar cualquier resultado.',
             competence: competenciaDeMateria(subject),
             shouldEvaluate: false,
             evaluateExpected: null
@@ -275,7 +275,7 @@ function planificarTurno({ mensaje, subject, mode, historial = [] }) {
         return {
             action: 'diagnostic',
             guidance: 'Es el primer mensaje. Formula UNA pregunta diagnostica para saber ' +
-                      'que conoce ya el estudiante antes de explicar. No des la respuesta.',
+                'que conoce ya el estudiante antes de explicar. No des la respuesta.',
             competence: competenciaDeMateria(subject),
             shouldEvaluate: false,
             evaluateExpected: null
@@ -287,8 +287,8 @@ function planificarTurno({ mensaje, subject, mode, historial = [] }) {
         return {
             action: 'evaluate',
             guidance: 'El estudiante respondio. Evalua el razonamiento (no solo el ' +
-                      'resultado), senala el paso concreto donde acerto o fallo, y ' +
-                      'propón el siguiente paso.',
+                'resultado), senala el paso concreto donde acerto o fallo, y ' +
+                'propón el siguiente paso.',
             competence: competenciaDeMateria(subject),
             shouldEvaluate: true,
             evaluateExpected: null
